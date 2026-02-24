@@ -1375,6 +1375,44 @@
         .appt-pers-btn.active { opacity: 1; }
         .appt-time-row { display: flex; gap: 10px; align-items: center; }
         .appt-time-row select { flex: 1; }
+
+        /* ── SCHULMANAGER INTEGRATION ── */
+        .sm-bar {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: var(--white); border-radius: var(--r); padding: 10px 14px;
+            margin-bottom: 14px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-lt);
+        }
+        .sm-status { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 180px; }
+        .sm-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+            background: var(--text-4); transition: background .3s;
+        }
+        .sm-dot.connected { background: var(--green); }
+        .sm-dot.error { background: var(--red); }
+        #sm-status-text { font-size: .85rem; color: var(--text-2); }
+        .sm-login-form {
+            background: var(--white); border-radius: var(--r); padding: 16px;
+            margin-bottom: 14px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-lt);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .sm-login-title { font-weight: 700; font-size: .95rem; color: var(--text); }
+        .sm-inp {
+            width: 100%; padding: 9px 12px; border-radius: 8px;
+            border: 1.5px solid var(--border); font-size: .9rem;
+            font-family: inherit; outline: none; background: var(--white); color: var(--text);
+            transition: border-color .15s;
+        }
+        .sm-inp:focus { border-color: var(--green); }
+        .sm-load-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+        .sm-select {
+            padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border);
+            font-family: inherit; font-size: .85rem; background: var(--white);
+            color: var(--text); cursor: pointer; outline: none;
+        }
+        .sm-select:focus { border-color: var(--green); }
+        .sm-hint { font-size: .8rem; color: var(--text-3); }
     </style>
 </head>
 <body>
@@ -1447,6 +1485,39 @@
         <div class="sec-head">
             <h2 class="sec-title">Stundenplan</h2>
         </div>
+
+        <!-- Schulmanager Verbindungsleiste -->
+        <div class="sm-bar" id="sm-bar">
+            <div class="sm-status">
+                <span class="sm-dot" id="sm-dot"></span>
+                <span id="sm-status-text">Schulmanager: wird gesucht …</span>
+            </div>
+            <button class="btn btn-outline btn-sm" id="sm-connect-btn" onclick="openSmLogin()" style="display:none">Anmelden</button>
+            <button class="btn btn-ghost btn-sm" id="sm-logout-btn" onclick="smLogout()" style="display:none">Abmelden</button>
+        </div>
+
+        <!-- Login-Formular -->
+        <div class="sm-login-form" id="sm-login-form" style="display:none">
+            <div class="sm-login-title">Bei Schulmanager anmelden</div>
+            <input type="text" id="sm-username" class="sm-inp" placeholder="E-Mail oder Benutzername" autocomplete="username"
+                   onkeydown="if(event.key==='Enter')document.getElementById('sm-password').focus()">
+            <input type="password" id="sm-password" class="sm-inp" placeholder="Passwort" autocomplete="current-password"
+                   onkeydown="if(event.key==='Enter')smLogin()">
+            <p id="sm-error" style="color:var(--red);font-size:.8rem;display:none;margin:0"></p>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-primary btn-sm" onclick="smLogin()">Anmelden</button>
+                <button class="btn btn-ghost btn-sm" onclick="closeSmLogin()">Abbrechen</button>
+            </div>
+        </div>
+
+        <!-- Stundenplan laden (nach Login) -->
+        <div class="sm-load-bar" id="sm-load-bar" style="display:none">
+            <span class="sm-hint">Laden für:</span>
+            <select id="sm-target-person" class="sm-select"></select>
+            <button class="btn btn-primary btn-sm" onclick="smLoadStundenplan()">Aktuelle Woche laden</button>
+            <span class="sm-hint" id="sm-loaded-info"></span>
+        </div>
+
         <div class="sp-person-sel" id="sp-person-sel"></div>
         <div id="sp-grid-outer"></div>
     </section>
@@ -4099,7 +4170,7 @@ function switchTab(tab) {
     document.getElementById('app-tab-sched').classList.toggle('active',       tab === 'sched');
     document.getElementById('app-tab-stundenplan').classList.toggle('active', tab === 'stundenplan');
     if (tab === 'sched')        renderSchedTab();
-    if (tab === 'stundenplan')  renderStundenplanTab();
+    if (tab === 'stundenplan')  { renderStundenplanTab(); smCheckStatus(); }
 }
 
 function renderSchedTab() {
@@ -4392,6 +4463,133 @@ function showApptTooltip(e, dayKey, id) {
 
 function hideApptTooltip() {
     document.getElementById('sched-tooltip').classList.remove('visible');
+}
+
+// ── SCHULMANAGER INTEGRATION ──
+const SM_PROXY = 'http://localhost:8765';
+
+async function smCheckStatus() {
+    try {
+        const r = await fetch(SM_PROXY + '/status', { signal: AbortSignal.timeout(2000) });
+        const d = await r.json();
+        if (d.loggedIn) {
+            smSetConnected(d.user, d.student);
+        } else {
+            smSetDisconnected();
+        }
+    } catch {
+        smSetProxyMissing();
+    }
+}
+
+function smSetProxyMissing() {
+    document.getElementById('sm-dot').className = 'sm-dot';
+    document.getElementById('sm-status-text').textContent = 'Proxy nicht gestartet – schulmanager_proxy.py ausführen';
+    document.getElementById('sm-connect-btn').style.display = 'none';
+    document.getElementById('sm-logout-btn').style.display = 'none';
+    document.getElementById('sm-load-bar').style.display = 'none';
+}
+
+function smSetDisconnected() {
+    document.getElementById('sm-dot').className = 'sm-dot';
+    document.getElementById('sm-status-text').textContent = 'Schulmanager: nicht angemeldet';
+    document.getElementById('sm-connect-btn').style.display = '';
+    document.getElementById('sm-logout-btn').style.display = 'none';
+    document.getElementById('sm-load-bar').style.display = 'none';
+}
+
+function smSetConnected(user, student) {
+    const name = student ? student.name
+        : (user ? (user.firstname + ' ' + user.lastname).trim() : '');
+    document.getElementById('sm-dot').className = 'sm-dot connected';
+    document.getElementById('sm-status-text').textContent = 'Schulmanager: ' + (name || 'verbunden');
+    document.getElementById('sm-connect-btn').style.display = 'none';
+    document.getElementById('sm-logout-btn').style.display = '';
+    const bar = document.getElementById('sm-load-bar');
+    bar.style.display = '';
+    document.getElementById('sm-target-person').innerHTML =
+        SP_PERSONS.map(n => '<option value="' + h(n) + '">' + h(n) + '</option>').join('');
+    closeSmLogin();
+}
+
+function openSmLogin() {
+    document.getElementById('sm-login-form').style.display = '';
+    document.getElementById('sm-error').style.display = 'none';
+    setTimeout(() => document.getElementById('sm-username').focus(), 60);
+}
+
+function closeSmLogin() {
+    document.getElementById('sm-login-form').style.display = 'none';
+    document.getElementById('sm-password').value = '';
+}
+
+async function smLogin() {
+    const username = document.getElementById('sm-username').value.trim();
+    const password = document.getElementById('sm-password').value;
+    const errEl = document.getElementById('sm-error');
+    errEl.style.display = 'none';
+    if (!username || !password) {
+        errEl.textContent = 'Bitte Benutzername und Passwort eingeben.';
+        errEl.style.display = ''; return;
+    }
+    const btn = document.querySelector('#sm-login-form .btn-primary');
+    btn.textContent = 'Wird angemeldet …'; btn.disabled = true;
+    try {
+        const r = await fetch(SM_PROXY + '/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+            signal: AbortSignal.timeout(12000)
+        });
+        const d = await r.json();
+        if (!r.ok) {
+            errEl.textContent = d.error || 'Anmeldung fehlgeschlagen.';
+            errEl.style.display = ''; return;
+        }
+        smSetConnected(d.user, d.student);
+    } catch (e) {
+        errEl.textContent = e.name === 'TimeoutError'
+            ? 'Timeout – Schulmanager nicht erreichbar.'
+            : 'Proxy nicht erreichbar. Ist schulmanager_proxy.py gestartet?';
+        errEl.style.display = '';
+    } finally {
+        btn.textContent = 'Anmelden'; btn.disabled = false;
+    }
+}
+
+function smLogout() {
+    document.getElementById('sm-loaded-info').textContent = '';
+    smSetDisconnected();
+}
+
+async function smLoadStundenplan() {
+    const person = document.getElementById('sm-target-person').value;
+    const infoEl = document.getElementById('sm-loaded-info');
+    const btn = document.querySelector('#sm-load-bar .btn-primary');
+    infoEl.textContent = 'Wird geladen …';
+    btn.disabled = true;
+    const week = todayWeekKey();
+    try {
+        const r = await fetch(SM_PROXY + '/stundenplan?week=' + week, {
+            signal: AbortSignal.timeout(12000)
+        });
+        const d = await r.json();
+        if (!r.ok) { infoEl.textContent = 'Fehler: ' + (d.error || 'Unbekannt'); return; }
+        if (!stundenplanData[person]) stundenplanData[person] = {};
+        SP_DAYS.forEach(dk => {
+            const dayData = d.data[dk] || {};
+            stundenplanData[person][dk] = SP_PERIODS.map(per => dayData[per.n] || '');
+        });
+        saveStundenplan();
+        stundenplanPerson = person;
+        renderStundenplanTab();
+        const { kw } = formatWeekLabel(week);
+        infoEl.textContent = 'KW ' + kw + ' geladen ✓';
+    } catch (e) {
+        infoEl.textContent = 'Fehler: ' + (e.name === 'TimeoutError' ? 'Timeout' : 'Verbindung fehlgeschlagen');
+    } finally {
+        btn.disabled = false;
+    }
 }
 
 // ── INIT ──
