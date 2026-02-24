@@ -10,6 +10,8 @@ Voraussetzung: pip install requests
 
 import json
 import sys
+import threading
+import time
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
@@ -181,6 +183,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send(500, {"error": str(e)})
 
+        elif parsed.path == "/shutdown":
+            self._send(200, {"ok": True})
+            threading.Thread(target=_shutdown_server, daemon=True).start()
+
         else:
             self._send(404, {"error": "Nicht gefunden"})
 
@@ -217,6 +223,14 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._send(404, {"error": "Nicht gefunden"})
 
 
+_server_ref = None
+
+def _shutdown_server():
+    time.sleep(0.4)  # kurz warten damit die Antwort noch gesendet wird
+    if _server_ref:
+        _server_ref.shutdown()
+
+
 def main():
     print("=" * 52)
     print("  Schulmanager Proxy  –  Wochenplaner")
@@ -225,10 +239,19 @@ def main():
     print(f"  Beenden : Strg+C")
     print("=" * 52)
 
-    server = HTTPServer(("localhost", PORT), ProxyHandler)
+    global _server_ref
+    try:
+        server = HTTPServer(("localhost", PORT), ProxyHandler)
+    except OSError:
+        print(f"  Port {PORT} bereits belegt – Proxy läuft bereits.")
+        sys.exit(0)
+
+    _server_ref = server
     try:
         server.serve_forever()
     except KeyboardInterrupt:
+        pass
+    finally:
         print("\nProxy beendet.")
         server.server_close()
 

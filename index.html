@@ -4585,6 +4585,8 @@ async function smLoadStundenplan() {
         renderStundenplanTab();
         const { kw } = formatWeekLabel(week);
         infoEl.textContent = 'KW ' + kw + ' geladen ✓';
+        fetch(SM_PROXY + '/shutdown').catch(() => {});
+        setTimeout(() => smSetProxyMissing(), 800);
     } catch (e) {
         infoEl.textContent = 'Fehler: ' + (e.name === 'TimeoutError' ? 'Timeout' : 'Verbindung fehlgeschlagen');
     } finally {
