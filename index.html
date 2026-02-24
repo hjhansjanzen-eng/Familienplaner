@@ -1223,7 +1223,7 @@
         /* Week grid outer */
         .sched-week-outer { border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); background: var(--white); }
         /* Single scroll container — everything scrolls together */
-        .sched-week-scroll { overflow: auto; max-height: calc(100vh - 340px); }
+        .sched-week-scroll { overflow: hidden; }
         /* One flex row: time column + 7 day wrappers */
         .sched-week-grid { display: flex; min-width: 420px; gap: 4px; padding: 6px; align-items: flex-start; }
         .sched-time-col { width: 38px; flex-shrink: 0; display: flex; flex-direction: column; }
@@ -4052,17 +4052,27 @@ const SCHED_PERSONS = [
     { name: 'Emil',    color: '#af52de', bg: '#f5eeff' },
 ];
 const SCHED_SLOTS = [];
-for (let sh = 6; sh < 22; sh++) {
+for (let sh = 7; sh < 22; sh++) {
     SCHED_SLOTS.push(`${String(sh).padStart(2,'0')}:00`);
     SCHED_SLOTS.push(`${String(sh).padStart(2,'0')}:30`);
 }
 SCHED_SLOTS.push('22:00'); // end-of-day anchor
-const ROW_H = 44; // px per 30-min slot
-const GRID_H = (SCHED_SLOTS.length - 1) * ROW_H;
+let ROW_H = 44; // px per 30-min slot — recalculated dynamically
+let GRID_H = (SCHED_SLOTS.length - 1) * ROW_H;
+
+function calcSchedRowH() {
+    const outer = document.getElementById('sched-week-outer');
+    if (!outer) return 44;
+    const rect = outer.getBoundingClientRect();
+    if (rect.top === 0 && rect.height === 0) return ROW_H; // element hidden
+    // subtract space for FAB button (~68px) + main bottom padding (80px) + slack (12px)
+    const availH = window.innerHeight - rect.top - 160;
+    return Math.max(18, Math.floor(availH / (SCHED_SLOTS.length - 1)));
+}
 
 function slotIdx(time) {
     const [hh, mm] = time.split(':').map(Number);
-    return (hh - 6) * 2 + (mm >= 30 ? 1 : 0);
+    return (hh - 7) * 2 + (mm >= 30 ? 1 : 0);
 }
 
 let scheduleData = {}, schedWeek = '', schedDay = 'mon';
@@ -4141,6 +4151,8 @@ function layoutAppts(appts) {
 }
 
 function renderSchedWeek() {
+    ROW_H  = calcSchedRowH();
+    GRID_H = (SCHED_SLOTS.length - 1) * ROW_H;
     const el = document.getElementById('sched-week-outer');
     const weekData = scheduleData[schedWeek] || {};
     const mon = schedWeekMonday();
@@ -4151,8 +4163,8 @@ function renderSchedWeek() {
     let timecol = '<div class="sched-time-col">'
         + '<div class="sched-wh-day" style="visibility:hidden;pointer-events:none;border-color:transparent">M<span>0</span></div>'
         + '<div class="sched-time-inner" style="height:' + GRID_H + 'px">';
-    for (let sh = 6; sh <= 21; sh++) {
-        timecol += '<span class="sched-hour-lbl" style="top:' + ((sh-6)*2*ROW_H) + 'px">' + sh + '</span>';
+    for (let sh = 7; sh <= 21; sh++) {
+        timecol += '<span class="sched-hour-lbl" style="top:' + ((sh-7)*2*ROW_H) + 'px">' + sh + '</span>';
     }
     timecol += '</div></div>';
 
@@ -4391,6 +4403,10 @@ renderMeals();
 renderWeekGrid();
 updateKeyIndicator();
 document.getElementById('img-upload-input').addEventListener('change', handleImageUpload);
+window.addEventListener('resize', () => {
+    const schedVisible = document.getElementById('tab-sched').style.display !== 'none';
+    if (schedVisible) renderSchedWeek();
+});
 </script>
 <div id="sched-tooltip" class="sched-tooltip"></div>
 </body>
