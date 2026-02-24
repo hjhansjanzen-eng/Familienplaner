@@ -1,0 +1,4397 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Familienplanner</title>
+    <style>
+        :root {
+            --green:       #34c759;
+            --green-dark:  #1e7b34;
+            --green-mid:   #46d466;
+            --green-light: #c6f0d1;
+            --green-faint: #edfaf2;
+            --bg:          #f2f2f7;
+            --white:       #ffffff;
+            --text:        #1c1c1e;
+            --text-2:      #48484a;
+            --text-3:      #6e6e73;
+            --text-4:      #aeaeb2;
+            --border:      rgba(60,60,67,.18);
+            --border-lt:   rgba(60,60,67,.09);
+            --red:         #ff3b30;
+            --red-bg:      #fff3f2;
+            --r:           16px;
+            --shadow-sm:   0 1px 3px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.04);
+            --shadow-md:   0 2px 8px rgba(0,0,0,.06), 0 8px 28px rgba(0,0,0,.07);
+            --shadow-lg:   0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.05);
+            --shadow-xl:   0 16px 60px rgba(0,0,0,.15), 0 4px 16px rgba(0,0,0,.07);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── SEASONAL THEMES ── */
+        [data-season='spring'] {
+            background-color: #fdf2f7;
+            background-image: url("data:image/svg+xml,<svg width='100' height='100' xmlns='http://www.w3.org/2000/svg'><circle cx='50' cy='43' r='6' fill='%23e8748a' opacity='0.14'/><circle cx='57' cy='49' r='6' fill='%23e8748a' opacity='0.14'/><circle cx='54' cy='58' r='6' fill='%23e8748a' opacity='0.14'/><circle cx='46' cy='58' r='6' fill='%23e8748a' opacity='0.14'/><circle cx='43' cy='49' r='6' fill='%23e8748a' opacity='0.14'/><circle cx='50' cy='51' r='3' fill='%23f8bbd0' opacity='0.4'/><circle cx='15' cy='15' r='3' fill='%23a8e6cf' opacity='0.2'/><circle cx='85' cy='85' r='3' fill='%23a8e6cf' opacity='0.2'/></svg>");
+            background-size: 100px 100px; background-attachment: fixed;
+            --s1: #e8748a; --s2: #a8e6cf; --sa: #fce4ec; --sb: #e8f5e9; --si: #b5294a;
+        }
+        [data-season='summer'] {
+            background-color: #fffbee;
+            background-image: url("data:image/svg+xml,<svg width='100' height='100' xmlns='http://www.w3.org/2000/svg'><circle cx='50' cy='50' r='10' fill='%23ffd166' opacity='0.22'/><line x1='50' y1='24' x2='50' y2='34' stroke='%23ff9f1c' stroke-width='2.5' stroke-linecap='round' opacity='0.18'/><line x1='50' y1='66' x2='50' y2='76' stroke='%23ff9f1c' stroke-width='2.5' stroke-linecap='round' opacity='0.18'/><line x1='24' y1='50' x2='34' y2='50' stroke='%23ff9f1c' stroke-width='2.5' stroke-linecap='round' opacity='0.18'/><line x1='66' y1='50' x2='76' y2='50' stroke='%23ff9f1c' stroke-width='2.5' stroke-linecap='round' opacity='0.18'/><line x1='32' y1='32' x2='39' y2='39' stroke='%23ff9f1c' stroke-width='2' stroke-linecap='round' opacity='0.15'/><line x1='68' y1='68' x2='61' y2='61' stroke='%23ff9f1c' stroke-width='2' stroke-linecap='round' opacity='0.15'/><line x1='68' y1='32' x2='61' y2='39' stroke='%23ff9f1c' stroke-width='2' stroke-linecap='round' opacity='0.15'/><line x1='32' y1='68' x2='39' y2='61' stroke='%23ff9f1c' stroke-width='2' stroke-linecap='round' opacity='0.15'/></svg>");
+            background-size: 100px 100px; background-attachment: fixed;
+            --s1: #ff9f1c; --s2: #2dc9c0; --sa: #fff8e1; --sb: #e0f7fa; --si: #b56200;
+        }
+        [data-season='autumn'] {
+            background-color: #fff8f3;
+            background-image: url("data:image/svg+xml,<svg width='100' height='100' xmlns='http://www.w3.org/2000/svg'><path d='M50 18C60 26 66 30 60 40C68 36 73 43 66 46C71 52 63 57 58 53C56 62 50 67 50 67C50 67 44 62 42 53C37 57 29 52 34 46C27 43 32 36 40 40C34 30 40 26 50 18Z' fill='%23d4621a' opacity='0.13'/><line x1='50' y1='67' x2='50' y2='80' stroke='%23d4621a' stroke-width='2' stroke-linecap='round' opacity='0.1'/><circle cx='18' cy='18' r='3' fill='%23f4b942' opacity='0.2'/><circle cx='82' cy='82' r='3' fill='%23f4b942' opacity='0.2'/></svg>");
+            background-size: 100px 100px; background-attachment: fixed;
+            --s1: #d4621a; --s2: #f4b942; --sa: #fff3e0; --sb: #fce4ec; --si: #8c3400;
+        }
+        [data-season='winter'] {
+            background-color: #f2f5ff;
+            background-image: url("data:image/svg+xml,<svg width='100' height='100' xmlns='http://www.w3.org/2000/svg'><line x1='50' y1='18' x2='50' y2='82' stroke='%234a7cf8' stroke-width='1.8' stroke-linecap='round' opacity='0.14'/><line x1='23' y1='34' x2='77' y2='66' stroke='%234a7cf8' stroke-width='1.8' stroke-linecap='round' opacity='0.14'/><line x1='77' y1='34' x2='23' y2='66' stroke='%234a7cf8' stroke-width='1.8' stroke-linecap='round' opacity='0.14'/><line x1='50' y1='34' x2='43' y2='26' stroke='%234a7cf8' stroke-width='1.3' stroke-linecap='round' opacity='0.11'/><line x1='50' y1='34' x2='57' y2='26' stroke='%234a7cf8' stroke-width='1.3' stroke-linecap='round' opacity='0.11'/><line x1='50' y1='66' x2='43' y2='74' stroke='%234a7cf8' stroke-width='1.3' stroke-linecap='round' opacity='0.11'/><line x1='50' y1='66' x2='57' y2='74' stroke='%234a7cf8' stroke-width='1.3' stroke-linecap='round' opacity='0.11'/><circle cx='50' cy='50' r='4' fill='%23a8c5ff' opacity='0.22'/></svg>");
+            background-size: 100px 100px; background-attachment: fixed;
+            --s1: #4a7cf8; --s2: #7ec8e3; --sa: #e8eaf6; --sb: #e0f7fa; --si: #1e3ea0;
+        }
+        [data-season='spring'] .header { border-bottom-color: rgba(232,116,138,.3); }
+        [data-season='summer'] .header { border-bottom-color: rgba(255,159,28,.3); }
+        [data-season='autumn'] .header { border-bottom-color: rgba(212,98,26,.3); }
+        [data-season='winter'] .header { border-bottom-color: rgba(74,124,248,.3); }
+        [data-season='spring'] .day-head { background: rgba(252,228,236,.75); color: #b5294a; }
+        [data-season='summer'] .day-head { background: rgba(255,248,225,.75); color: #b56200; }
+        [data-season='autumn'] .day-head { background: rgba(255,243,224,.75); color: #8c3400; }
+        [data-season='winter'] .day-head { background: rgba(232,234,246,.75); color: #1e3ea0; }
+        [data-season='spring'] .day-card.weekend .day-head { background: rgba(248,187,208,.65); color: #880e4f; }
+        [data-season='summer'] .day-card.weekend .day-head { background: rgba(178,235,242,.55); color: #006064; }
+        [data-season='autumn'] .day-card.weekend .day-head { background: rgba(255,224,178,.65); color: #7c3000; }
+        [data-season='winter'] .day-card.weekend .day-head { background: rgba(179,216,235,.55); color: #0d2d7a; }
+
+        /* ── HEADER ── */
+        .header {
+            background: rgba(255,255,255,.88);
+            backdrop-filter: saturate(180%) blur(24px);
+            -webkit-backdrop-filter: saturate(180%) blur(24px);
+            border-bottom: 0.5px solid rgba(60,60,67,.2);
+            display: flex;
+            align-items: stretch;
+            padding: 0 28px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 24px;
+        }
+        .brand {
+            font-size: .9rem;
+            font-weight: 800;
+            letter-spacing: -.4px;
+            display: flex;
+            align-items: center;
+            padding: 14px 0;
+            white-space: nowrap;
+            background: linear-gradient(135deg, var(--s1, var(--green-dark)), var(--s2, var(--green-mid)));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* ── CUSTOM SHOP ITEM FORM ── */
+        .ci-footer {
+            flex-shrink: 0;
+            background: rgba(255,255,255,.92);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-top: 0.5px solid rgba(60,60,67,.15);
+            padding: 12px 24px 20px;
+        }
+        .ci-form {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .ci-inp {
+            padding: 8px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: .83rem;
+            font-family: inherit;
+            color: var(--text);
+            background: var(--bg);
+            transition: border-color .14s, box-shadow .14s;
+        }
+        .ci-inp:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,.15); background: var(--white); }
+        .ci-name { flex: 1; min-width: 0; }
+        .ci-amt  { width: 72px; }
+        .ci-unit { width: 72px; }
+        .ci-add-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: var(--green);
+            color: #fff;
+            font-size: 1.3rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(52,199,89,.35);
+            transition: background .14s, transform .12s;
+        }
+        .ci-add-btn:hover { background: var(--green-dark); transform: scale(1.08); }
+        @media (max-width: 480px) {
+            .ci-amt, .ci-unit { width: 58px; }
+            .ci-footer { padding: 10px 16px 16px; }
+        }
+
+        /* ── CATEGORY GENERATION ── */
+        .catgen-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .catgen-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: .85rem;
+            color: var(--text-3);
+            padding: 12px 0 4px;
+        }
+        .catgen-success {
+            font-size: .84rem;
+            color: var(--green-dark);
+            background: var(--green-faint);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 12px;
+        }
+        .catgen-error {
+            font-size: .84rem;
+            color: var(--red);
+            background: var(--red-bg);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-top: 12px;
+        }
+
+        /* ── MAIN ACTION BUTTONS ── */
+        .main-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 28px;
+        }
+        .main-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 28px 16px;
+            background: linear-gradient(145deg, var(--sa, var(--white)) 0%, var(--sb, var(--green-faint)) 100%);
+            border: 1.5px solid var(--s1, var(--border));
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow .2s ease, transform .15s ease, border-color .15s, background .15s;
+            text-align: center;
+        }
+        .main-action-btn:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-color: var(--s2, var(--green-light));
+            background: linear-gradient(145deg, var(--sb, var(--green-faint)) 0%, var(--sa, var(--white)) 100%);
+        }
+        .main-action-btn svg { color: var(--si, var(--green-dark)); flex-shrink: 0; }
+        .main-action-label {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--si, var(--text));
+            letter-spacing: -.2px;
+        }
+        .main-action-sub {
+            font-size: .76rem;
+            color: var(--text-3);
+            font-weight: 400;
+        }
+        @media (max-width: 480px) {
+            .main-action-btn { padding: 22px 12px; gap: 8px; }
+            .main-action-label { font-size: .9rem; }
+        }
+
+        /* ── LAYOUT ── */
+        .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+
+        /* ── FULL-SCREEN PANELS ── */
+        .full-panel {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform .3s cubic-bezier(.25,.46,.45,.94);
+            pointer-events: none;
+        }
+        .full-panel.open {
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        .panel-head {
+            background: rgba(255,255,255,.88);
+            backdrop-filter: saturate(180%) blur(24px);
+            -webkit-backdrop-filter: saturate(180%) blur(24px);
+            border-bottom: 0.5px solid rgba(60,60,67,.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 24px;
+            height: 56px;
+            flex-shrink: 0;
+        }
+        .panel-title {
+            flex: 1;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -.3px;
+        }
+        .panel-back {
+            background: none;
+            border: none;
+            color: var(--green-dark);
+            font-size: .88rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 6px 10px 6px 4px;
+            border-radius: 8px;
+            transition: background .12s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .panel-back:hover { background: var(--green-faint); }
+        .panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 24px 80px;
+            max-width: 1100px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ── SECTION HEAD ── */
+        .sec-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+        .sec-title { font-size: 1.5rem; font-weight: 700; color: var(--text); letter-spacing: -.5px; }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 18px;
+            border-radius: 100px;
+            cursor: pointer;
+            font-size: .825rem;
+            font-weight: 600;
+            font-family: inherit;
+            border: 1.5px solid transparent;
+            transition: all .18s ease;
+            white-space: nowrap;
+            line-height: 1.4;
+            letter-spacing: -.1px;
+        }
+        .btn-sm { padding: 6px 14px; font-size: .78rem; }
+        .btn-primary {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+            box-shadow: 0 2px 10px rgba(52,199,89,.3);
+        }
+        .btn-primary:hover {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+            box-shadow: 0 4px 18px rgba(52,199,89,.38);
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: var(--white);
+            color: var(--text-2);
+            border-color: var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-outline:hover {
+            background: var(--green-faint);
+            border-color: var(--green-light);
+            color: var(--green-dark);
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: #fff0f0;
+            color: #d32f2f;
+            border-color: #f5c6c6;
+        }
+        .btn-danger:hover {
+            background: #d32f2f;
+            color: #fff;
+            border-color: #d32f2f;
+        }
+        .btn-ghost { background: none; color: var(--text-3); border-color: transparent; }
+        .btn-ghost:hover { background: var(--red-bg); color: var(--red); }
+
+        .btn-del {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: rgba(120,120,128,.12);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text-3);
+            font-family: inherit;
+            line-height: 1;
+            transition: background .14s, color .14s;
+            flex-shrink: 0;
+        }
+        .btn-del:hover { background: var(--red-bg); color: var(--red); }
+
+        /* ── EMPTY STATES ── */
+        .empty { text-align: center; padding: 60px 24px; color: var(--text-4); }
+        .empty-svg { display: block; margin: 0 auto 16px; opacity: .2; }
+        .empty strong { display: block; font-size: .95rem; color: var(--text-3); font-weight: 600; margin-bottom: 6px; letter-spacing: -.1px; }
+        .empty p { font-size: .83rem; line-height: 1.65; }
+
+        /* ══ MEAL LIBRARY ══ */
+        .meals-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .meal-card {
+            background: var(--white);
+            border-radius: var(--r);
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow .2s ease, transform .15s ease;
+        }
+        .meal-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+        .meal-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .meal-title { flex: 1; font-weight: 600; font-size: .93rem; color: var(--text); letter-spacing: -.1px; }
+        .meal-badge {
+            font-size: .72rem;
+            color: var(--text-3);
+            background: rgba(120,120,128,.1);
+            padding: 3px 9px;
+            border-radius: 100px;
+            font-weight: 500;
+        }
+        .chevron {
+            flex-shrink: 0;
+            color: var(--text-4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform .22s ease;
+        }
+        .chevron svg { display: block; }
+        .meal-card.open .chevron { transform: rotate(180deg); }
+
+        .meal-body {
+            display: none;
+            padding: 0 16px 14px;
+            border-top: 0.5px solid var(--border-lt);
+        }
+        .meal-card.open .meal-body { display: block; }
+
+        .ing-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .ing-table tr { border-bottom: 0.5px solid var(--border-lt); }
+        .ing-table tr:last-child { border-bottom: none; }
+        .ing-table td { padding: 7px 0; font-size: .84rem; color: var(--text-2); }
+        .td-amt { font-weight: 600; color: var(--green-dark); width: 110px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+        .meal-foot {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 0.5px solid var(--border-lt);
+        }
+
+        /* ══ WEEK PLAN ══ */
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .day-card {
+            background: var(--white);
+            border-radius: var(--r);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: box-shadow .2s ease;
+        }
+        .day-card:hover { box-shadow: var(--shadow-md); }
+        .day-head {
+            padding: 9px 12px;
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            border-bottom: 0.5px solid var(--border-lt);
+            background: rgba(242,242,247,.8);
+        }
+        .day-card.weekend .day-head { color: var(--green-dark); background: var(--green-faint); }
+
+        .day-body { padding: 10px 8px; display: flex; flex-direction: column; gap: 10px; }
+
+        /* ── SLOT IMAGE (week plan) ── */
+        .slot-img-preview {
+            width: 100%;
+            height: 60px;
+            border-radius: 10px;
+            background-size: cover;
+            background-position: center;
+            display: none;
+            margin-bottom: 4px;
+            box-shadow: 0 1px 6px rgba(0,0,0,.12);
+        }
+        .slot-img-preview.visible { display: block; }
+
+        .slot-lbl {
+            display: block;
+            font-size: .65rem;
+            font-weight: 700;
+            color: var(--text-4);
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            margin-bottom: 4px;
+        }
+        .day-select {
+            width: 100%;
+            padding: 7px 22px 7px 9px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: .78rem;
+            background-color: var(--bg);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23aeaeb2' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            color: var(--text);
+            cursor: pointer;
+            appearance: none;
+            font-family: inherit;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: border-color .15s, background-color .15s;
+        }
+        .day-select:hover { border-color: var(--green-light); }
+        .day-select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,.15); }
+        .day-select.has-meal { border-color: var(--green-light); background-color: var(--green-faint); color: var(--green-dark); }
+
+        /* ══ SLOT PICKER ══ */
+        .slot-picker-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.45); z-index: 600; align-items: flex-end;
+        }
+        .slot-picker-overlay.open { display: flex; }
+        .slot-picker {
+            background: var(--bg); border-radius: 18px 18px 0 0; width: 100%;
+            max-height: 75vh; display: flex; flex-direction: column;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .slot-picker-head {
+            display: flex; align-items: center; padding: 16px 18px 10px;
+            border-bottom: 0.5px solid var(--border-lt); flex-shrink: 0;
+        }
+        .slot-picker-title { flex: 1; font-weight: 700; font-size: .95rem; }
+        .slot-picker-search { padding: 10px 16px 6px; flex-shrink: 0; }
+        .slot-picker-cats {
+            display: flex; gap: 6px; overflow-x: auto; padding: 6px 16px 8px;
+            flex-shrink: 0; scrollbar-width: none; border-bottom: 0.5px solid var(--border-lt);
+        }
+        .slot-picker-cats::-webkit-scrollbar { display: none; }
+        .slot-picker-list { overflow-y: auto; flex: 1; }
+        .slot-picker-cat {
+            font-size: .68rem; font-weight: 700; color: var(--text-3);
+            padding: 10px 18px 3px; text-transform: uppercase; letter-spacing: .5px;
+        }
+        .slot-picker-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 18px; cursor: pointer; font-size: .9rem;
+            border-bottom: 0.5px solid var(--border-lt); transition: background .1s;
+        }
+        .slot-picker-item:last-child { border-bottom: none; }
+        .slot-picker-item:hover { background: var(--green-faint); }
+        .slot-picker-item.selected { color: var(--green-dark); font-weight: 600; }
+        .slot-picker-item.sp-clear { color: var(--text-3); font-style: italic; }
+        .sp-check { color: var(--green); flex-shrink: 0; opacity: 0; }
+        .slot-picker-item.selected .sp-check { opacity: 1; }
+
+        /* ══ SHOPPING LIST ══ */
+        .shop-stats {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: var(--r);
+            margin-bottom: 14px;
+            font-size: .84rem;
+            color: var(--text-2);
+            background: var(--white);
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-tag {
+            background: var(--green);
+            color: #fff;
+            font-size: .71rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 100px;
+            letter-spacing: -.1px;
+        }
+
+        .shop-list {
+            background: var(--white);
+            border-radius: var(--r);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .shop-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            border-bottom: 0.5px solid var(--border-lt);
+            transition: background .12s;
+        }
+        .shop-item:last-child { border-bottom: none; }
+        .shop-item:hover { background: var(--green-faint); }
+        .shop-item.done { opacity: .4; }
+        .shop-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--green);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .si-amt {
+            font-weight: 600;
+            color: var(--green-dark);
+            min-width: 90px;
+            text-align: right;
+            font-size: .8rem;
+            font-variant-numeric: tabular-nums;
+            cursor: pointer;
+            border-bottom: 1px dashed transparent;
+            transition: border-color .15s;
+        }
+        .si-amt:hover { border-bottom-color: var(--green-dark); }
+        .si-amt-input {
+            width: 3.5rem;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--green-dark);
+            border: 1.5px solid var(--green);
+            border-radius: 4px;
+            padding: 2px 4px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            outline: none;
+            background: var(--white);
+        }
+        .si-name { flex: 1; font-size: .88rem; }
+        .shop-item.done .si-name { text-decoration: line-through; color: var(--text-4); }
+        .shop-item.done .si-amt  { color: var(--text-4); }
+
+        /* ══ MODAL ══ */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .overlay.open { display: flex; }
+        .modal {
+            background: var(--white);
+            border-radius: 22px;
+            padding: 28px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 88vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+        .modal-title { font-size: 1.15rem; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+        .modal-sub { font-size: .79rem; color: var(--text-3); margin-top: 4px; margin-bottom: 24px; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: .78rem; font-weight: 600; color: var(--text-2); margin-bottom: 7px; letter-spacing: -.1px; }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: .9rem;
+            color: var(--text);
+            font-family: inherit;
+            background: var(--bg);
+            transition: border-color .14s, box-shadow .14s, background .14s;
+        }
+        .form-input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,.15); background: var(--white); }
+
+        .ing-cols { display: grid; grid-template-columns: 1fr 86px 76px 32px; gap: 7px; margin-bottom: 6px; }
+        .ing-col-lbl { font-size: .68rem; font-weight: 600; color: var(--text-4); text-transform: uppercase; letter-spacing: .5px; }
+
+        .ing-row { display: grid; grid-template-columns: 1fr 86px 76px 32px; gap: 7px; margin-bottom: 7px; align-items: center; }
+        .ing-inp {
+            padding: 8px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: .82rem;
+            color: var(--text);
+            width: 100%;
+            font-family: inherit;
+            background: var(--bg);
+            transition: border-color .14s, box-shadow .14s;
+        }
+        .ing-inp:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,.15); background: var(--white); }
+
+        .modal-foot {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 0.5px solid var(--border-lt);
+        }
+
+        /* ── API KEY BUTTON (Header) ── */
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+        }
+        .key-btn {
+            background: rgba(52,199,89,.12);
+            border: none;
+            color: var(--green-dark);
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-family: inherit;
+            font-size: .76rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background .14s;
+            white-space: nowrap;
+        }
+        .key-btn:hover { background: rgba(52,199,89,.2); }
+        .key-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-4);
+            flex-shrink: 0;
+        }
+        .key-dot.active { background: var(--green); }
+
+        /* ── SUGGEST ── */
+        .name-row { display: flex; gap: 8px; align-items: flex-start; }
+        .name-row .form-input { flex: 1; min-width: 0; }
+        .btn-suggest { flex-shrink: 0; position: relative; }
+        .btn-suggest:disabled { opacity: .5; cursor: not-allowed; }
+        .no-key-hint {
+            font-size: .75rem;
+            color: var(--text-3);
+            margin-top: 6px;
+        }
+        .no-key-hint a {
+            color: var(--green);
+            cursor: pointer;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            font: inherit;
+            font-size: inherit;
+            padding: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border: 1.5px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin .65s linear infinite;
+            vertical-align: -2px;
+        }
+
+        /* ── KEY OVERLAY ── */
+        .key-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .key-overlay.open { display: flex; }
+        .key-panel {
+            background: var(--white);
+            border-radius: 22px;
+            padding: 26px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow-xl);
+        }
+        .key-panel h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 5px; letter-spacing: -.2px; }
+        .key-panel p  { font-size: .8rem; color: var(--text-3); margin-bottom: 18px; line-height: 1.6; }
+        .key-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+        /* ── MEAL THUMBNAIL ── */
+        .meal-thumb {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background-size: cover;
+            background-position: center;
+            background-color: rgba(120,120,128,.1);
+            flex-shrink: 0;
+            display: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,.1);
+        }
+        .meal-thumb.loaded { display: block; }
+
+        /* ── IMAGE MODAL ── */
+        .img-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 560;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .img-overlay.open { display: flex; }
+        .img-modal {
+            background: var(--white);
+            border-radius: 22px;
+            width: 100%;
+            max-width: 540px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .img-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px 14px;
+            border-bottom: 0.5px solid var(--border-lt);
+        }
+        .img-title { flex: 1; font-size: 1rem; font-weight: 700; letter-spacing: -.2px; }
+        .img-body {
+            background: var(--bg);
+            min-height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .img-viewer {
+            width: 100%;
+            display: block;
+            max-height: 420px;
+            object-fit: cover;
+        }
+        .img-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-3);
+            font-size: .85rem;
+            padding: 40px;
+            text-align: center;
+        }
+        .img-foot {
+            display: flex;
+            gap: 8px;
+            padding: 14px 20px;
+            border-top: 0.5px solid var(--border-lt);
+            justify-content: space-between;
+            align-items: center;
+        }
+        .img-foot-left { display: flex; gap: 8px; }
+
+        /* ── RECIPE MODAL ── */
+        .recipe-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 550;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .recipe-overlay.open { display: flex; }
+        .recipe-modal {
+            background: var(--white);
+            border-radius: 22px;
+            width: 100%;
+            max-width: 580px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+        }
+        .recipe-head {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 22px 24px 16px;
+            border-bottom: 0.5px solid var(--border-lt);
+            flex-shrink: 0;
+        }
+        .recipe-title {
+            flex: 1;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+            letter-spacing: -.3px;
+        }
+        .recipe-body {
+            overflow-y: auto;
+            padding: 20px 24px;
+            flex: 1;
+        }
+        .recipe-section { margin-bottom: 22px; }
+        .recipe-section:last-child { margin-bottom: 0; }
+        .recipe-section-title {
+            font-size: .69rem;
+            font-weight: 700;
+            color: var(--text-4);
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            margin-bottom: 10px;
+        }
+        .recipe-ing-list { list-style: none; }
+        .recipe-ing-list li {
+            display: flex;
+            gap: 10px;
+            padding: 6px 0;
+            border-bottom: 0.5px solid var(--border-lt);
+            font-size: .875rem;
+        }
+        .recipe-ing-list li:last-child { border-bottom: none; }
+        .recipe-ing-amt { font-weight: 600; color: var(--green-dark); min-width: 90px; font-variant-numeric: tabular-nums; }
+        .recipe-steps { list-style: none; counter-reset: step; }
+        .recipe-steps li {
+            counter-increment: step;
+            display: flex;
+            gap: 14px;
+            padding: 11px 0;
+            border-bottom: 0.5px solid var(--border-lt);
+            font-size: .88rem;
+            line-height: 1.6;
+        }
+        .recipe-steps li:last-child { border-bottom: none; }
+        .recipe-steps li::before {
+            content: counter(step);
+            min-width: 26px;
+            height: 26px;
+            background: var(--green-faint);
+            color: var(--green-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .recipe-placeholder {
+            color: var(--text-3);
+            font-size: .85rem;
+            text-align: center;
+            padding: 24px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        .recipe-foot {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+            border-top: 0.5px solid var(--border-lt);
+            flex-shrink: 0;
+        }
+
+        /* ── WEEK NAVIGATION ── */
+        .week-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .week-label {
+            flex: 1;
+            text-align: center;
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: var(--text);
+            min-width: 180px;
+            letter-spacing: -.5px;
+            line-height: 1.2;
+            background: linear-gradient(135deg, var(--s1, var(--green-dark)), var(--s2, var(--green-mid)));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .week-sub {
+            display: block;
+            font-size: .85rem;
+            font-weight: 500;
+            -webkit-text-fill-color: var(--text-3);
+            color: var(--text-3);
+            margin-top: 2px;
+            letter-spacing: 0;
+        }
+        .btn-today {
+            background: var(--green-faint);
+            color: var(--green-dark);
+            border-color: var(--green-light);
+        }
+        .btn-today:hover { background: var(--green-light); }
+        .btn-today.is-current { background: var(--green); color: #fff; border-color: var(--green); box-shadow: 0 2px 10px rgba(52,199,89,.3); }
+
+        /* ── CATEGORY FILTER ── */
+        .cat-filter {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .cat-btn {
+            padding: 5px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--white);
+            color: var(--text-2);
+            font-size: .78rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background .12s, border-color .12s, color .12s;
+            white-space: nowrap;
+        }
+        .cat-btn:hover { background: var(--green-faint); border-color: var(--green-light); color: var(--green-dark); }
+        .cat-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+        .cat-btn.fav-cat { border-color: #f5b800; color: #b07800; }
+        .cat-btn.fav-cat.active { background: #f5b800; border-color: #f5b800; color: #fff; }
+
+        .meal-search-wrap {
+            padding: 10px 18px 6px;
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 2;
+            border-bottom: 0.5px solid var(--border-lt);
+        }
+        .meal-search-inp {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 14px 8px 36px;
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            font-size: .88rem;
+            font-family: inherit;
+            background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat 12px center;
+            background-size: 16px;
+            outline: none;
+            color: var(--text);
+            transition: border-color .15s;
+        }
+        .meal-search-inp:focus { border-color: var(--green); }
+        .meal-search-inp::placeholder { color: var(--text-4); }
+
+        .fav-btn {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            color: #ccc;
+            padding: 2px 4px;
+            transition: color .15s, transform .15s;
+        }
+        .fav-btn:hover { color: #f5b800; transform: scale(1.2); }
+        .fav-btn.active { color: #f5b800; }
+
+        .cat-section-title {
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            padding: 18px 0 8px;
+        }
+        .cat-section-title:first-child { padding-top: 0; }
+
+        /* ── SHARE PANEL ── */
+        .share-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.3);
+            backdrop-filter: blur(4px);
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .share-overlay.open { display: flex; }
+        .share-panel {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 16px 48px rgba(0,0,0,.14);
+        }
+        .share-panel h3 { font-size: .98rem; font-weight: 600; margin-bottom: 4px; }
+        .share-panel p  { font-size: .8rem; color: var(--text-3); margin-bottom: 18px; line-height: 1.55; }
+        .share-options  { display: flex; flex-direction: column; gap: 8px; }
+        .share-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 14px;
+            border-radius: var(--r);
+            border: 1px solid var(--border);
+            background: var(--white);
+            color: var(--text);
+            font-size: .875rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background .12s, border-color .12s;
+            text-align: left;
+            width: 100%;
+        }
+        .share-btn:hover { background: var(--green-faint); border-color: var(--green-light); }
+        .share-btn .share-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+        .share-btn .share-label { flex: 1; }
+        .share-btn .share-sub  { font-size: .72rem; color: var(--text-3); font-weight: 400; display: block; margin-top: 1px; }
+        .icon-native  { background: var(--green-faint); }
+        .icon-whatsapp{ background: #e8f9ef; }
+        .icon-email   { background: #eef2ff; }
+        .icon-copy    { background: var(--border-lt); }
+        .share-foot   { margin-top: 14px; display: flex; justify-content: flex-end; }
+        .copy-success { color: var(--green); font-size: .78rem; font-weight: 500; opacity: 0; transition: opacity .3s; }
+        .copy-success.show { opacity: 1; }
+        .icon-telegram { background: #e4f3fb; }
+        .tg-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .75rem;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+        .tg-status.ok    { color: var(--green); }
+        .tg-status.err   { color: var(--red); }
+        .tg-status.spin  { color: var(--text-3); }
+        .tg-help {
+            font-size: .78rem;
+            color: var(--text-3);
+            background: var(--green-faint);
+            border-radius: 6px;
+            padding: 10px 12px;
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+        .tg-help b { color: var(--text-2); }
+        .tg-row { display: flex; gap: 8px; align-items: flex-start; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 950px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 640px) {
+            .week-grid { grid-template-columns: repeat(2, 1fr); }
+            .main { padding: 20px 16px 56px; }
+            .modal { padding: 22px 16px; }
+            .ing-cols, .ing-row { grid-template-columns: 1fr 70px 64px 28px; }
+            .header { padding: 0 16px; gap: 12px; }
+            .panel-body { padding: 16px 16px 64px; }
+            .panel-head { padding: 0 16px; }
+        }
+        @media (max-width: 380px) { .week-grid { grid-template-columns: 1fr; } }
+
+        /* ══ APP TABS ══ */
+        .app-tabs {
+            display: flex; align-items: center; gap: 4px; flex: 1; justify-content: center;
+        }
+        .app-tab {
+            padding: 6px 18px; border-radius: 20px; border: none;
+            background: transparent; font-size: .85rem; font-weight: 600;
+            font-family: inherit; cursor: pointer; color: var(--text-3);
+            transition: background .15s, color .15s; white-space: nowrap;
+        }
+        .app-tab.active {
+            background: linear-gradient(135deg, var(--s1, var(--green-dark)), var(--s2, var(--green-mid)));
+            color: #fff;
+        }
+
+        /* ══ TERMINPLAN ══ */
+        /* Week grid outer */
+        .sched-week-outer { border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); background: var(--white); }
+        /* Single scroll container — everything scrolls together */
+        .sched-week-scroll { overflow: auto; max-height: calc(100vh - 340px); }
+        /* One flex row: time column + 7 day wrappers */
+        .sched-week-grid { display: flex; min-width: 420px; gap: 4px; padding: 6px; align-items: flex-start; }
+        .sched-time-col { width: 38px; flex-shrink: 0; display: flex; flex-direction: column; }
+        .sched-time-inner { position: relative; flex: 1; }
+        .sched-hour-lbl {
+            position: absolute; right: 4px; font-size: .62rem;
+            color: var(--text-4); transform: translateY(-50%);
+            font-variant-numeric: tabular-nums; user-select: none; white-space: nowrap;
+        }
+        /* Each day wrapper = header cell + content column stacked vertically */
+        .sched-day-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        /* Sticky header cell inside wrapper */
+        .sched-wh-day {
+            position: sticky; top: 0; z-index: 5;
+            text-align: center; padding: 7px 2px; font-size: .7rem;
+            font-weight: 700; color: var(--text-3); background: var(--white);
+            border: 2px solid rgba(60,60,67,.18); border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer; user-select: none; transition: background .12s;
+        }
+        .sched-wh-day:hover { background: var(--green-faint, #f0faf3); }
+        .sched-wh-day.expanded {
+            background: var(--green-faint, #f0faf3);
+            border-color: var(--s1, var(--green-dark));
+            color: var(--s1, var(--green-dark));
+        }
+        .sched-wh-day span { display: block; font-size: .65rem; font-weight: 400; color: var(--text-4); }
+        .sched-wh-day.weekend { color: var(--text-4); }
+        .sched-wh-day.today { color: var(--s1, var(--green-dark)); }
+        .sched-wh-day.today .sched-wh-today-dot {
+            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--s1, var(--green)); margin-left: 3px; vertical-align: middle;
+        }
+        /* Content column inside wrapper */
+        .sched-day-col {
+            position: relative; min-width: 0;
+            border: 2px solid rgba(60,60,67,.18); border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+        .sched-day-wrapper.expanded > .sched-day-col { border-color: var(--s1, var(--green-dark)); }
+        .sched-day-col.weekend { background: rgba(0,0,0,.012); }
+        /* Appointment tooltip */
+        .sched-tooltip {
+            position: fixed; z-index: 2000; pointer-events: none;
+            background: rgba(28,28,30,.93); color: #fff;
+            border-radius: 10px; padding: 9px 13px;
+            font-size: .78rem; line-height: 1.5;
+            box-shadow: 0 6px 20px rgba(0,0,0,.25);
+            opacity: 0; transition: opacity .12s; white-space: nowrap;
+        }
+        .sched-tooltip.visible { opacity: 1; }
+        .sched-tooltip strong { display: block; font-size: .82rem; margin-bottom: 2px; }
+        .sched-tooltip-time { font-size: .72rem; opacity: .7; margin-bottom: 5px; }
+        .sched-tooltip-persons { display: flex; flex-wrap: wrap; gap: 3px; }
+        /* ── Stundenplan ── */
+        .sp-person-sel { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .sp-person-btn {
+            padding: 6px 20px; border-radius: 20px; border: 2px solid;
+            background: transparent; font-weight: 600; font-size: .85rem; cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+        .sp-grid-wrap { overflow-x: auto; }
+        .sp-grid { width: 100%; border-collapse: separate; border-spacing: 4px; min-width: 360px; }
+        .sp-grid thead th {
+            padding: 7px 4px; font-size: .72rem; font-weight: 700; text-align: center;
+            border-radius: 8px; color: var(--text-3); white-space: nowrap;
+        }
+        .sp-grid thead th.sp-th-day { background: var(--white); border: 2px solid var(--border); }
+        .sp-grid th.sp-th-empty { width: 42px; }
+        .sp-period-col {
+            width: 42px; font-size: .65rem; text-align: center; color: var(--text-4);
+            padding: 4px 2px; white-space: nowrap; line-height: 1.4; vertical-align: middle;
+        }
+        .sp-period-col strong { display: block; font-size: .75rem; color: var(--text-2); }
+        .sp-cell {
+            height: 46px; padding: 0; vertical-align: middle;
+            background: var(--white); border: 1.5px solid var(--border-lt); border-radius: 8px;
+            cursor: pointer; transition: background .1s; position: relative;
+        }
+        .sp-cell:hover { background: var(--green-faint, #f0faf3); }
+        .sp-cell.has-val { border-color: var(--sp-color, var(--border)); background: var(--sp-bg, var(--white)); }
+        .sp-cell-text {
+            display: block; text-align: center; font-size: .8rem; font-weight: 600;
+            padding: 4px 6px; line-height: 1.3; color: var(--sp-color, var(--text-1));
+        }
+        .sp-cell input {
+            width: 100%; height: 46px; border: none; background: transparent;
+            text-align: center; font-size: .8rem; font-weight: 600; outline: none;
+            padding: 4px 6px; color: inherit; display: block;
+        }
+        .sched-events-col { flex: 1; position: relative; }
+        .sched-line {
+            position: absolute; left: 0; right: 0; pointer-events: none;
+            border-top: 0.5px solid var(--border-lt);
+        }
+        .sched-line.hour { border-top-color: var(--border); }
+        .sched-click-zone {
+            position: absolute; left: 0; right: 0; cursor: pointer;
+        }
+        .sched-click-zone:hover { background: rgba(52,199,89,.05); }
+        .sched-appt {
+            position: absolute; border-radius: 8px; padding: 4px 8px 4px 8px;
+            overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+            cursor: pointer; transition: opacity .15s; box-sizing: border-box;
+            border-left: 3px solid;
+        }
+        .sched-appt:hover { opacity: .82; }
+        .saa-title { display: block; font-size: .78rem; font-weight: 700; line-height: 1.3; }
+        .saa-info  { display: block; font-size: .68rem; opacity: .75; margin-top: 1px; }
+        .saa-del {
+            position: absolute; top: 3px; right: 5px; background: none; border: none;
+            cursor: pointer; font-size: .9rem; opacity: .45; line-height: 1; color: inherit;
+        }
+        .saa-del:hover { opacity: 1; }
+        .sched-add-fab {
+            margin-top: 14px; display: flex; justify-content: flex-end;
+        }
+        .sched-fab-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 24px;
+            background: linear-gradient(135deg, var(--s1, var(--green-dark)), var(--s2, var(--green-mid)));
+            color: #fff; border: none; font-size: .88rem; font-weight: 700;
+            font-family: inherit; cursor: pointer; box-shadow: var(--shadow-md);
+        }
+
+        .saa-dots { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 3px; }
+        .saa-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .saa-person-pill {
+            display: inline-block; padding: 1px 5px; border-radius: 20px;
+            font-size: .62rem; font-weight: 700; white-space: nowrap;
+            opacity: .9;
+        }
+
+        /* Appointment form */
+        .appt-days { display: flex; gap: 5px; flex-wrap: wrap; padding: 2px 0; }
+        .appt-day-btn {
+            padding: 5px 10px; border-radius: 10px; border: 1.5px solid var(--border);
+            background: none; font-size: .78rem; font-weight: 600; font-family: inherit;
+            cursor: pointer; color: var(--text-3); transition: background .12s, border-color .12s;
+        }
+        .appt-day-btn.active { border-color: var(--s1, var(--green)); background: var(--sa, var(--green-faint)); color: var(--si, var(--green-dark)); }
+        .appt-persons { display: flex; gap: 8px; flex-wrap: wrap; padding: 2px 0; }
+        .appt-pers-btn {
+            padding: 7px 16px; border-radius: 20px; border: 2px solid;
+            background: none; font-size: .85rem; font-weight: 600;
+            font-family: inherit; cursor: pointer; opacity: .4;
+            transition: opacity .15s, background .15s;
+        }
+        .appt-pers-btn.active { opacity: 1; }
+        .appt-time-row { display: flex; gap: 10px; align-items: center; }
+        .appt-time-row select { flex: 1; }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="brand">Familienplanner</div>
+    <nav class="app-tabs">
+        <button class="app-tab active" id="app-tab-week" onclick="switchTab('week')">Essensplan</button>
+        <button class="app-tab" id="app-tab-sched" onclick="switchTab('sched')">Terminplan</button>
+        <button class="app-tab" id="app-tab-stundenplan" onclick="switchTab('stundenplan')">Stundenplan</button>
+    </nav>
+    <div class="header-right">
+        <button class="key-btn" id="key-btn" onclick="openKeyPanel()" title="API-Key für automatische Zutaten">
+            <span class="key-dot" id="key-dot"></span>API-Key
+        </button>
+    </div>
+</header>
+
+<main class="main">
+
+    <section id="tab-week">
+        <div class="sec-head">
+            <h2 class="sec-title">Essensplan</h2>
+            <button class="btn btn-ghost" onclick="clearWeek()">Leeren</button>
+        </div>
+        <div class="week-nav">
+            <button class="btn btn-outline btn-sm" onclick="shiftWeek(-1)">&#8592; Vorwoche</button>
+            <div class="week-label" id="week-label"></div>
+            <button class="btn btn-outline btn-sm" onclick="shiftWeek(1)">Nächste Woche &#8594;</button>
+            <button class="btn btn-sm btn-today" id="btn-today" onclick="goToToday()">Heute</button>
+        </div>
+        <div class="week-grid" id="week-grid"></div>
+
+        <div class="main-actions">
+            <button class="main-action-btn" onclick="openMealsPanel()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18M12 3c-4 4-4 14 0 18M12 3c4 4 4 14 0 18M3 11c0-5 2-8 9-9M21 11c0-5-2-8-9-9"/></svg>
+                <span class="main-action-label">Gerichte</span>
+                <span class="main-action-sub">Rezepte & Zutaten</span>
+            </button>
+            <button class="main-action-btn" onclick="openShoppingPanel()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                <span class="main-action-label">Einkaufsliste</span>
+                <span class="main-action-sub">Zutaten für diese Woche</span>
+            </button>
+        </div>
+    </section>
+
+    <section id="tab-sched" style="display:none">
+        <div class="sec-head">
+            <h2 class="sec-title">Terminplan</h2>
+        </div>
+        <div class="week-nav">
+            <button class="btn btn-outline btn-sm" onclick="shiftSchedWeek(-1)">&#8592; Vorwoche</button>
+            <div class="week-label" id="sched-week-label"></div>
+            <button class="btn btn-outline btn-sm" onclick="shiftSchedWeek(1)">Nächste Woche &#8594;</button>
+            <button class="btn btn-sm btn-today" id="sched-btn-today" onclick="goToSchedToday()">Heute</button>
+        </div>
+        <div class="sched-week-outer" id="sched-week-outer">
+            <!-- rendered by renderSchedWeek() -->
+        </div>
+        <div class="sched-add-fab">
+            <button class="sched-fab-btn" onclick="openApptForm(null,null)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Termin hinzufügen
+            </button>
+        </div>
+    </section>
+
+    <section id="tab-stundenplan" style="display:none">
+        <div class="sec-head">
+            <h2 class="sec-title">Stundenplan</h2>
+        </div>
+        <div class="sp-person-sel" id="sp-person-sel"></div>
+        <div id="sp-grid-outer"></div>
+    </section>
+
+</main>
+
+<!-- Gerichte Panel -->
+<div class="full-panel" id="panel-meals">
+    <div class="panel-head">
+        <button class="panel-back" onclick="closeMealsPanel()">
+            <svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,1 1,6.5 7,12"/></svg>
+            Zurück
+        </button>
+        <span class="panel-title">Gerichte</span>
+        <button class="btn btn-primary btn-sm" onclick="openModal()">+ Hinzufügen</button>
+    </div>
+    <div class="panel-body">
+        <div class="catgen-bar">
+            <div class="cat-filter" id="cat-filter" style="flex:1;margin-bottom:0"></div>
+            <button class="btn btn-outline btn-sm" onclick="openCatGenModal()" title="Neue Kategorie mit KI generieren">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+                Neue Kategorie
+            </button>
+        </div>
+        <div class="meal-search-wrap">
+            <input type="search" id="meal-search-inp" class="meal-search-inp"
+                   placeholder="Gericht suchen …" autocomplete="off"
+                   oninput="setMealSearch(this.value)">
+        </div>
+        <div class="meals-list" id="meals-list"></div>
+    </div>
+</div>
+
+<!-- Einkaufsliste Panel -->
+<div class="full-panel" id="panel-shopping">
+    <div class="panel-head">
+        <button class="panel-back" onclick="closeShoppingPanel()">
+            <svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7,1 1,6.5 7,12"/></svg>
+            Zurück
+        </button>
+        <span class="panel-title">Einkaufsliste</span>
+        <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="openSharePanel()">&#8599; Teilen</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetChecked()">Zurücksetzen</button>
+        </div>
+    </div>
+    <div class="panel-body" style="padding-bottom:16px">
+        <div id="shop-container"></div>
+    </div>
+    <div class="ci-footer">
+        <div class="ci-form">
+            <input class="ci-inp ci-name" id="ci-name" type="text" placeholder="Artikel hinzufügen …"
+                   autocomplete="off" onkeydown="if(event.key==='Enter')addCustomItem()">
+            <input class="ci-inp ci-amt"  id="ci-amt"  type="number" placeholder="Menge" min="0" step="any">
+            <input class="ci-inp ci-unit" id="ci-unit" type="text" placeholder="Einheit">
+            <button class="ci-add-btn" onclick="addCustomItem()">+</button>
+        </div>
+    </div>
+</div>
+
+<div class="overlay" id="modal-overlay" onclick="overlayClick(event)">
+    <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-title" id="modal-title">Neues Gericht</div>
+        <div class="modal-sub" id="modal-sub">Name und Zutaten mit Menge und Einheit angeben.</div>
+
+        <div class="form-group">
+            <label class="form-label" for="inp-name">Name des Gerichts</label>
+            <div class="name-row">
+                <input class="form-input" id="inp-name" type="text"
+                       placeholder="z. B. Spaghetti Bolognese" autocomplete="off"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();suggestIngredients();}">
+                <button class="btn btn-outline btn-suggest" id="btn-suggest"
+                        onclick="suggestIngredients()">Zutaten laden</button>
+            </div>
+            <div id="suggest-hint"></div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Zutaten</label>
+            <div class="ing-cols">
+                <span class="ing-col-lbl">Zutat</span>
+                <span class="ing-col-lbl">Menge</span>
+                <span class="ing-col-lbl">Einheit</span>
+                <span></span>
+            </div>
+            <div id="ing-container"></div>
+            <button class="btn btn-outline" onclick="addIngRow()" style="margin-top:8px">
+                + Zutat
+            </button>
+        </div>
+
+        <div class="modal-foot">
+            <button class="btn btn-outline" onclick="closeModal()">Abbrechen</button>
+            <button class="btn btn-primary" onclick="saveMeal()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="img-overlay" id="img-overlay" onclick="if(event.target===this)closeImg()">
+    <div class="img-modal">
+        <div class="img-head">
+            <div class="img-title" id="img-title"></div>
+            <button class="btn-del" onclick="closeImg()">×</button>
+        </div>
+        <div class="img-body" id="img-body"></div>
+        <div class="img-foot">
+            <div class="img-foot-left">
+                <button class="btn btn-outline btn-sm" onclick="triggerUpload()">Hochladen</button>
+                <button class="btn btn-ghost btn-sm" onclick="deleteImage()">Löschen</button>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="closeImg()">Schließen</button>
+        </div>
+        <input type="file" accept="image/*" id="img-upload-input" style="display:none">
+    </div>
+</div>
+
+<!-- Recipe Modal -->
+<div class="recipe-overlay" id="recipe-overlay" onclick="if(event.target===this)closeRecipe()">
+    <div class="recipe-modal">
+        <div class="recipe-head">
+            <div class="recipe-title" id="recipe-title"></div>
+            <button class="btn-del" onclick="closeRecipe()" title="Schließen">×</button>
+        </div>
+        <div class="recipe-body" id="recipe-body"></div>
+        <div class="recipe-foot">
+            <button class="btn btn-outline btn-sm" id="btn-regen" onclick="regenRecipe()">Neu generieren</button>
+            <button class="btn btn-primary btn-sm" onclick="closeRecipe()">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<!-- Telegram Config Panel -->
+<div class="key-overlay" id="tg-overlay" onclick="if(event.target===this)closeTgPanel()">
+    <div class="key-panel" style="max-width:460px">
+        <h3>Telegram-Bot einrichten</h3>
+        <div class="tg-help">
+            <b>Einmalige Einrichtung in 3 Schritten:</b><br>
+            1. Öffne Telegram → suche <b>@BotFather</b> → sende <b>/newbot</b> und folge den Anweisungen → kopiere den <b>Token</b><br>
+            2. Suche deinen neuen Bot in Telegram und sende ihm eine beliebige Nachricht (z.&nbsp;B. „Hallo")<br>
+            3. Füge Token unten ein und klicke <b>Chat‑ID ermitteln</b>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="inp-tg-token">Bot-Token</label>
+            <input class="form-input" id="inp-tg-token" type="password"
+                   placeholder="123456789:AAF..." autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="inp-tg-chatid">Deine Chat-ID</label>
+            <div class="tg-row">
+                <input class="form-input" id="inp-tg-chatid" type="text"
+                       placeholder="wird automatisch ermittelt" autocomplete="off" style="flex:1">
+                <button class="btn btn-outline" onclick="fetchTgChatId()" id="btn-tg-fetch">Ermitteln</button>
+            </div>
+            <div class="tg-status" id="tg-fetch-status"></div>
+        </div>
+        <div class="key-foot">
+            <button class="btn btn-ghost"   onclick="deleteTgConfig()">Löschen</button>
+            <button class="btn btn-outline" onclick="closeTgPanel()">Abbrechen</button>
+            <button class="btn btn-primary" onclick="saveTgConfig()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- Share Panel -->
+<div class="share-overlay" id="share-overlay" onclick="if(event.target===this)closeSharePanel()">
+    <div class="share-panel">
+        <h3>Einkaufsliste teilen</h3>
+        <p id="share-summary"></p>
+        <div class="share-options" id="share-options"></div>
+        <div class="share-foot">
+            <span class="copy-success" id="copy-success">Kopiert!</span>
+            <button class="btn btn-outline" onclick="closeSharePanel()" style="margin-left:12px">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Generation Modal -->
+<!-- Appointment Form -->
+<div class="slot-picker-overlay" id="appt-form-overlay" onclick="if(event.target.id==='appt-form-overlay')closeApptForm()">
+    <div class="slot-picker" onclick="event.stopPropagation()" style="max-height:92vh">
+        <div class="slot-picker-head">
+            <span class="slot-picker-title" id="appt-form-title">Neuer Termin</span>
+            <button class="btn-del" onclick="closeApptForm()">×</button>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
+            <div class="form-group">
+                <label class="form-label">Tag</label>
+                <div class="appt-days" id="appt-days"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Termin / Beschreibung</label>
+                <input class="form-input" id="appt-title" type="text" placeholder="z.B. Arzttermin, Training …" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Personen (mehrere möglich)</label>
+                <div class="appt-persons" id="appt-persons"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Uhrzeit</label>
+                <div class="appt-time-row">
+                    <select class="form-input" id="appt-start" onchange="syncApptEnd()"></select>
+                    <span style="color:var(--text-3);flex-shrink:0">bis</span>
+                    <select class="form-input" id="appt-end"></select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-foot" style="padding:0 20px 24px">
+            <button id="appt-del-btn" class="btn btn-danger" onclick="deleteApptFromForm()" style="display:none;margin-right:auto">Löschen</button>
+            <button class="btn btn-outline" onclick="closeApptForm()">Abbrechen</button>
+            <button class="btn btn-primary" onclick="saveApptForm()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- Slot Picker -->
+<div class="slot-picker-overlay" id="slot-picker-overlay" onclick="closeSlotPicker()">
+    <div class="slot-picker" onclick="event.stopPropagation()">
+        <div class="slot-picker-head">
+            <span class="slot-picker-title" id="slot-picker-title">Gericht auswählen</span>
+            <button class="btn-del" onclick="closeSlotPicker()">×</button>
+        </div>
+        <div class="slot-picker-search">
+            <input type="search" id="slot-picker-inp" class="meal-search-inp"
+                   placeholder="Gericht suchen …" autocomplete="off"
+                   oninput="filterSlotPicker(this.value)">
+        </div>
+        <div class="slot-picker-cats" id="slot-picker-cats"></div>
+        <div class="slot-picker-list" id="slot-picker-list"></div>
+    </div>
+</div>
+
+<div class="overlay" id="catgen-overlay" onclick="if(event.target.id==='catgen-overlay')closeCatGenModal()">
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:440px">
+        <div class="modal-title">Neue Kategorie generieren</div>
+        <div class="modal-sub">Gib einen Küchenstil ein – die KI erstellt automatisch 20 passende Gerichte mit Zutaten.</div>
+        <div class="form-group">
+            <label class="form-label" for="inp-catname">Kategoriename</label>
+            <input class="form-input" id="inp-catname" type="text"
+                   placeholder="z. B. Pakistanisch, Mexikanisch, Griechisch …"
+                   autocomplete="off"
+                   onkeydown="if(event.key==='Enter')generateCategory()">
+        </div>
+        <div id="catgen-status"></div>
+        <div class="modal-foot">
+            <button class="btn btn-outline" id="btn-catgen-cancel" onclick="closeCatGenModal()">Abbrechen</button>
+            <button class="btn btn-primary" id="btn-catgen-go" onclick="generateCategory()">Generieren</button>
+        </div>
+    </div>
+</div>
+
+<!-- API Key Panel -->
+<div class="key-overlay" id="key-overlay" onclick="if(event.target===this)closeKeyPanel()">
+    <div class="key-panel">
+        <h3>Groq API-Key</h3>
+        <p>Für die automatische Zutatenerkennung wird die Groq API verwendet.
+           Den Key findest du unter <strong>console.groq.com/keys</strong> — kostenlos nutzbar.<br><br>
+           Der Key wird ausschließlich lokal in diesem Browser gespeichert und
+           nur direkt an Groqs API gesendet.</p>
+        <label class="form-label" for="inp-apikey">API-Key</label>
+        <input class="form-input" id="inp-apikey" type="password"
+               placeholder="sk-ant-..." autocomplete="off"
+               onkeydown="if(event.key==='Enter')saveKey()">
+        <div class="key-foot">
+            <button class="btn btn-ghost"   onclick="deleteKey()">Key löschen</button>
+            <button class="btn btn-outline" onclick="closeKeyPanel()">Abbrechen</button>
+            <button class="btn btn-primary" onclick="saveKey()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const DAYS = [
+    { key: 'mon', label: 'Montag',     weekend: false },
+    { key: 'tue', label: 'Dienstag',   weekend: false },
+    { key: 'wed', label: 'Mittwoch',   weekend: false },
+    { key: 'thu', label: 'Donnerstag', weekend: false },
+    { key: 'fri', label: 'Freitag',    weekend: false },
+    { key: 'sat', label: 'Samstag',    weekend: true  },
+    { key: 'sun', label: 'Sonntag',    weekend: true  },
+];
+
+const CATEGORIES = ['Alle', 'Italienisch', 'Russisch', 'Asiatisch', 'Deutsch', 'International'];
+
+const DEFAULT_MEALS = [
+    // ── ITALIENISCH ──
+    { id:'it01', name:'Spaghetti Bolognese', category:'Italienisch', ingredients:[
+        {name:'Hackfleisch (gemischt)', amount:500, unit:'g'},
+        {name:'Spaghetti', amount:400, unit:'g'},
+        {name:'Passierte Tomaten', amount:400, unit:'ml'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Olivenöl', amount:2, unit:'EL'},
+        {name:'Parmesan', amount:40, unit:'g'},
+    ]},
+    { id:'it02', name:'Pizza Margherita', category:'Italienisch', ingredients:[
+        {name:'Mehl (Tipo 00)', amount:500, unit:'g'},
+        {name:'Hefe (frisch)', amount:15, unit:'g'},
+        {name:'Passierte Tomaten', amount:200, unit:'ml'},
+        {name:'Mozzarella', amount:250, unit:'g'},
+        {name:'Basilikum (frisch)', amount:0.5, unit:'Bund'},
+        {name:'Olivenöl', amount:3, unit:'EL'},
+    ]},
+    { id:'it03', name:'Risotto ai Funghi', category:'Italienisch', ingredients:[
+        {name:'Risottoreis (Arborio)', amount:320, unit:'g'},
+        {name:'Champignons', amount:400, unit:'g'},
+        {name:'Gemüsebrühe', amount:1000, unit:'ml'},
+        {name:'Parmesan', amount:60, unit:'g'},
+        {name:'Butter', amount:40, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Weißwein', amount:100, unit:'ml'},
+    ]},
+    { id:'it04', name:'Lasagne al Forno', category:'Italienisch', ingredients:[
+        {name:'Hackfleisch (gemischt)', amount:500, unit:'g'},
+        {name:'Lasagneplatten', amount:250, unit:'g'},
+        {name:'Bechamelsauce', amount:500, unit:'ml'},
+        {name:'Passierte Tomaten', amount:400, unit:'ml'},
+        {name:'Mozzarella', amount:200, unit:'g'},
+        {name:'Parmesan', amount:60, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+    ]},
+    { id:'it05', name:'Spaghetti Carbonara', category:'Italienisch', ingredients:[
+        {name:'Spaghetti', amount:400, unit:'g'},
+        {name:'Pancetta / Guanciale', amount:150, unit:'g'},
+        {name:'Eier', amount:4, unit:'Stk'},
+        {name:'Pecorino Romano', amount:80, unit:'g'},
+        {name:'Schwarzer Pfeffer', amount:1, unit:'TL'},
+    ]},
+    { id:'it06', name:'Pesto-Pasta', category:'Italienisch', ingredients:[
+        {name:'Linguine', amount:400, unit:'g'},
+        {name:'Basilikum (frisch)', amount:80, unit:'g'},
+        {name:'Pinienkerne', amount:50, unit:'g'},
+        {name:'Parmesan', amount:60, unit:'g'},
+        {name:'Knoblauch', amount:1, unit:'Zehen'},
+        {name:'Olivenöl', amount:5, unit:'EL'},
+    ]},
+    { id:'it07', name:'Gnocchi al Pomodoro', category:'Italienisch', ingredients:[
+        {name:'Kartoffeln (mehligkochend)', amount:700, unit:'g'},
+        {name:'Mehl', amount:200, unit:'g'},
+        {name:'Ei', amount:1, unit:'Stk'},
+        {name:'Passierte Tomaten', amount:400, unit:'ml'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Basilikum', amount:0.5, unit:'Bund'},
+        {name:'Parmesan', amount:40, unit:'g'},
+    ]},
+    { id:'it08', name:'Minestrone', category:'Italienisch', ingredients:[
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Zucchini', amount:1, unit:'Stk'},
+        {name:'Sellerie', amount:2, unit:'Stangen'},
+        {name:'Kidneybohnen (Dose)', amount:400, unit:'g'},
+        {name:'Tomaten (gehackt)', amount:400, unit:'g'},
+        {name:'Pasta (Ditalini)', amount:100, unit:'g'},
+        {name:'Gemüsebrühe', amount:1200, unit:'ml'},
+    ]},
+    { id:'it09', name:'Ossobuco alla Milanese', category:'Italienisch', ingredients:[
+        {name:'Kalbshaxen', amount:1200, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Sellerie', amount:2, unit:'Stangen'},
+        {name:'Weißwein', amount:200, unit:'ml'},
+        {name:'Tomaten (gehackt)', amount:400, unit:'g'},
+        {name:'Gemüsebrühe', amount:500, unit:'ml'},
+    ]},
+    { id:'it10', name:'Saltimbocca alla Romana', category:'Italienisch', ingredients:[
+        {name:'Kalbsschnitzel', amount:600, unit:'g'},
+        {name:'Prosciutto crudo', amount:100, unit:'g'},
+        {name:'Salbei (frisch)', amount:12, unit:'Blätter'},
+        {name:'Butter', amount:40, unit:'g'},
+        {name:'Weißwein', amount:150, unit:'ml'},
+    ]},
+    { id:'it11', name:'Pizza Quattro Stagioni', category:'Italienisch', ingredients:[
+        {name:'Pizzateig', amount:500, unit:'g'},
+        {name:'Tomatensoße', amount:200, unit:'ml'},
+        {name:'Mozzarella', amount:250, unit:'g'},
+        {name:'Champignons', amount:100, unit:'g'},
+        {name:'Kochschinken', amount:100, unit:'g'},
+        {name:'Artischockenherzen', amount:100, unit:'g'},
+        {name:'Schwarze Oliven', amount:50, unit:'g'},
+    ]},
+    { id:'it12', name:'Caprese', category:'Italienisch', ingredients:[
+        {name:'Fleischtomaten', amount:4, unit:'Stk'},
+        {name:'Büffelmozzarella', amount:250, unit:'g'},
+        {name:'Basilikum (frisch)', amount:1, unit:'Bund'},
+        {name:'Olivenöl (extra vergine)', amount:4, unit:'EL'},
+        {name:'Fleur de Sel', amount:1, unit:'Prise'},
+    ]},
+    { id:'it13', name:'Panna Cotta', category:'Italienisch', ingredients:[
+        {name:'Sahne', amount:500, unit:'ml'},
+        {name:'Zucker', amount:60, unit:'g'},
+        {name:'Gelatine (Blätter)', amount:4, unit:'Stk'},
+        {name:'Vanilleschote', amount:1, unit:'Stk'},
+        {name:'Himbeeren (TK)', amount:200, unit:'g'},
+    ]},
+    { id:'it14', name:'Tiramisu', category:'Italienisch', ingredients:[
+        {name:'Mascarpone', amount:500, unit:'g'},
+        {name:'Löffelbiskuits', amount:200, unit:'g'},
+        {name:'Espresso (kalt)', amount:200, unit:'ml'},
+        {name:'Eier', amount:4, unit:'Stk'},
+        {name:'Zucker', amount:80, unit:'g'},
+        {name:'Kakaopulver', amount:2, unit:'EL'},
+    ]},
+    { id:'it15', name:'Tortellini in Rahmsauce', category:'Italienisch', ingredients:[
+        {name:'Tortellini (Käse-Füllung)', amount:500, unit:'g'},
+        {name:'Sahne', amount:200, unit:'ml'},
+        {name:'Parmesan', amount:60, unit:'g'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Butter', amount:20, unit:'g'},
+        {name:'Basilikum', amount:0.5, unit:'Bund'},
+    ]},
+    { id:'it16', name:'Arancini', category:'Italienisch', ingredients:[
+        {name:'Risottoreis', amount:300, unit:'g'},
+        {name:'Hackfleisch', amount:150, unit:'g'},
+        {name:'Erbsen (TK)', amount:100, unit:'g'},
+        {name:'Mozzarella', amount:100, unit:'g'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Semmelbrösel', amount:150, unit:'g'},
+        {name:'Öl (zum Frittieren)', amount:500, unit:'ml'},
+    ]},
+    { id:'it17', name:'Focaccia', category:'Italienisch', ingredients:[
+        {name:'Mehl (Tipo 00)', amount:500, unit:'g'},
+        {name:'Hefe (frisch)', amount:15, unit:'g'},
+        {name:'Olivenöl', amount:6, unit:'EL'},
+        {name:'Rosmarin (frisch)', amount:2, unit:'Zweige'},
+        {name:'Meersalz (grob)', amount:1, unit:'TL'},
+        {name:'Wasser', amount:350, unit:'ml'},
+    ]},
+    { id:'it18', name:'Pasta e Fagioli', category:'Italienisch', ingredients:[
+        {name:'Ditalini (kleine Pasta)', amount:200, unit:'g'},
+        {name:'Cannellini-Bohnen (Dose)', amount:400, unit:'g'},
+        {name:'Tomaten (gehackt)', amount:400, unit:'g'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Rosmarin', amount:1, unit:'Zweig'},
+        {name:'Gemüsebrühe', amount:800, unit:'ml'},
+        {name:'Olivenöl', amount:3, unit:'EL'},
+    ]},
+    { id:'it19', name:'Polenta mit Ragù', category:'Italienisch', ingredients:[
+        {name:'Polenta (Maisgrieß)', amount:300, unit:'g'},
+        {name:'Hackfleisch', amount:400, unit:'g'},
+        {name:'Tomaten (gehackt)', amount:400, unit:'g'},
+        {name:'Rotwein', amount:100, unit:'ml'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Parmesan', amount:40, unit:'g'},
+    ]},
+    { id:'it20', name:'Ribollita', category:'Italienisch', ingredients:[
+        {name:'Weißkohl', amount:400, unit:'g'},
+        {name:'Cannellini-Bohnen (Dose)', amount:400, unit:'g'},
+        {name:'Tomaten (gehackt)', amount:400, unit:'g'},
+        {name:'Altbrot (Weißbrot)', amount:200, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Sellerie', amount:2, unit:'Stangen'},
+        {name:'Gemüsebrühe', amount:1200, unit:'ml'},
+    ]},
+
+    // ── RUSSISCH ──
+    { id:'ru01', name:'Borscht', category:'Russisch', ingredients:[
+        {name:'Rote Bete', amount:400, unit:'g'},
+        {name:'Weißkohl', amount:300, unit:'g'},
+        {name:'Kartoffeln', amount:300, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Rindfleisch', amount:400, unit:'g'},
+        {name:'Tomatenmark', amount:2, unit:'EL'},
+        {name:'Saure Sahne', amount:100, unit:'ml'},
+    ]},
+    { id:'ru02', name:'Pelmeni', category:'Russisch', ingredients:[
+        {name:'Mehl', amount:400, unit:'g'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Hackfleisch (gemischt)', amount:400, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Saure Sahne', amount:100, unit:'ml'},
+        {name:'Butter', amount:30, unit:'g'},
+    ]},
+    { id:'ru03', name:'Beef Stroganoff', category:'Russisch', ingredients:[
+        {name:'Rinderfilet', amount:600, unit:'g'},
+        {name:'Champignons', amount:300, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Saure Sahne', amount:200, unit:'ml'},
+        {name:'Senf (mittelscharf)', amount:1, unit:'EL'},
+        {name:'Butter', amount:40, unit:'g'},
+        {name:'Rinderbrühe', amount:150, unit:'ml'},
+    ]},
+    { id:'ru04', name:'Blini mit Räucherlachs', category:'Russisch', ingredients:[
+        {name:'Mehl', amount:200, unit:'g'},
+        {name:'Milch', amount:400, unit:'ml'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Butter', amount:30, unit:'g'},
+        {name:'Räucherlachs', amount:200, unit:'g'},
+        {name:'Schmand', amount:150, unit:'ml'},
+        {name:'Dill (frisch)', amount:0.5, unit:'Bund'},
+    ]},
+    { id:'ru05', name:'Russischer Salat (Olivye)', category:'Russisch', ingredients:[
+        {name:'Kartoffeln', amount:400, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Eier', amount:4, unit:'Stk'},
+        {name:'Erbsen (Dose)', amount:200, unit:'g'},
+        {name:'Essiggurken', amount:3, unit:'Stk'},
+        {name:'Fleischwurst', amount:200, unit:'g'},
+        {name:'Mayonnaise', amount:150, unit:'g'},
+    ]},
+    { id:'ru06', name:'Plov (Pilaw)', category:'Russisch', ingredients:[
+        {name:'Lammfleisch', amount:600, unit:'g'},
+        {name:'Reis (Langkorn)', amount:400, unit:'g'},
+        {name:'Karotten', amount:3, unit:'Stk'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Knoblauch', amount:1, unit:'Knolle'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Pflanzenöl', amount:5, unit:'EL'},
+    ]},
+    { id:'ru07', name:'Schi (Kohlsuppe)', category:'Russisch', ingredients:[
+        {name:'Weißkohl', amount:400, unit:'g'},
+        {name:'Rindfleisch', amount:400, unit:'g'},
+        {name:'Kartoffeln', amount:300, unit:'g'},
+        {name:'Karotten', amount:1, unit:'Stk'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Tomatenmark', amount:1, unit:'EL'},
+        {name:'Saure Sahne', amount:100, unit:'ml'},
+    ]},
+    { id:'ru08', name:'Schaschlik', category:'Russisch', ingredients:[
+        {name:'Schweinehals', amount:1000, unit:'g'},
+        {name:'Zwiebeln', amount:3, unit:'Stk'},
+        {name:'Zitronensaft', amount:2, unit:'EL'},
+        {name:'Paprikapulver', amount:2, unit:'TL'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Öl', amount:3, unit:'EL'},
+    ]},
+    { id:'ru09', name:'Wareniki mit Kartoffeln', category:'Russisch', ingredients:[
+        {name:'Mehl', amount:400, unit:'g'},
+        {name:'Eier', amount:1, unit:'Stk'},
+        {name:'Kartoffeln', amount:500, unit:'g'},
+        {name:'Butter', amount:60, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Saure Sahne', amount:150, unit:'ml'},
+    ]},
+    { id:'ru10', name:'Solyanka', category:'Russisch', ingredients:[
+        {name:'Rindfleisch', amount:400, unit:'g'},
+        {name:'Wurst (gemischt)', amount:200, unit:'g'},
+        {name:'Essiggurken', amount:3, unit:'Stk'},
+        {name:'Kapern', amount:2, unit:'EL'},
+        {name:'Oliven', amount:80, unit:'g'},
+        {name:'Tomatenmark', amount:2, unit:'EL'},
+        {name:'Rinderbrühe', amount:1500, unit:'ml'},
+    ]},
+    { id:'ru11', name:'Manty (Dampfknödel)', category:'Russisch', ingredients:[
+        {name:'Mehl', amount:500, unit:'g'},
+        {name:'Wasser', amount:200, unit:'ml'},
+        {name:'Lammhackfleisch', amount:500, unit:'g'},
+        {name:'Zwiebeln', amount:3, unit:'Stk'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Joghurt (zum Servieren)', amount:150, unit:'g'},
+    ]},
+    { id:'ru12', name:'Okroschka', category:'Russisch', ingredients:[
+        {name:'Fleischwurst', amount:200, unit:'g'},
+        {name:'Gurken', amount:2, unit:'Stk'},
+        {name:'Radieschen', amount:8, unit:'Stk'},
+        {name:'Eier (hartgekocht)', amount:3, unit:'Stk'},
+        {name:'Frühlingszwiebeln', amount:4, unit:'Stk'},
+        {name:'Kefir', amount:800, unit:'ml'},
+        {name:'Dill (frisch)', amount:0.5, unit:'Bund'},
+    ]},
+    { id:'ru13', name:'Kotlety (Frikadellen)', category:'Russisch', ingredients:[
+        {name:'Hackfleisch (gemischt)', amount:600, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Altbrot (eingeweicht)', amount:100, unit:'g'},
+        {name:'Milch', amount:100, unit:'ml'},
+        {name:'Ei', amount:1, unit:'Stk'},
+        {name:'Öl', amount:3, unit:'EL'},
+    ]},
+    { id:'ru14', name:'Ukha (Fischsuppe)', category:'Russisch', ingredients:[
+        {name:'Lachsfilet', amount:400, unit:'g'},
+        {name:'Kartoffeln', amount:400, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Karotten', amount:1, unit:'Stk'},
+        {name:'Lorbeerblätter', amount:2, unit:'Stk'},
+        {name:'Dill (frisch)', amount:0.5, unit:'Bund'},
+        {name:'Fischbrühe', amount:1500, unit:'ml'},
+    ]},
+    { id:'ru15', name:'Rassolnik', category:'Russisch', ingredients:[
+        {name:'Rindfleisch', amount:400, unit:'g'},
+        {name:'Kartoffeln', amount:300, unit:'g'},
+        {name:'Essiggurken', amount:3, unit:'Stk'},
+        {name:'Gerste', amount:80, unit:'g'},
+        {name:'Karotten', amount:1, unit:'Stk'},
+        {name:'Saure Sahne', amount:100, unit:'ml'},
+        {name:'Rinderbrühe', amount:1500, unit:'ml'},
+    ]},
+    { id:'ru16', name:'Zrazy (Gefüllte Frikadellen)', category:'Russisch', ingredients:[
+        {name:'Hackfleisch (gemischt)', amount:600, unit:'g'},
+        {name:'Eier (hartgekocht)', amount:3, unit:'Stk'},
+        {name:'Champignons', amount:200, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Mehl', amount:3, unit:'EL'},
+        {name:'Öl', amount:3, unit:'EL'},
+    ]},
+    { id:'ru17', name:'Holodets (Sülze)', category:'Russisch', ingredients:[
+        {name:'Schweinshaxe', amount:1500, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:4, unit:'Zehen'},
+        {name:'Lorbeerblätter', amount:3, unit:'Stk'},
+        {name:'Schwarze Pfefferkörner', amount:8, unit:'Stk'},
+    ]},
+    { id:'ru18', name:'Medovik (Honigkuchen)', category:'Russisch', ingredients:[
+        {name:'Mehl', amount:500, unit:'g'},
+        {name:'Honig', amount:80, unit:'g'},
+        {name:'Eier', amount:3, unit:'Stk'},
+        {name:'Butter', amount:100, unit:'g'},
+        {name:'Zucker', amount:150, unit:'g'},
+        {name:'Saure Sahne', amount:500, unit:'g'},
+    ]},
+    { id:'ru19', name:'Piroggen mit Kohl', category:'Russisch', ingredients:[
+        {name:'Mehl', amount:500, unit:'g'},
+        {name:'Hefe (frisch)', amount:20, unit:'g'},
+        {name:'Milch', amount:200, unit:'ml'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Weißkohl', amount:500, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Butter', amount:60, unit:'g'},
+    ]},
+    { id:'ru20', name:'Kulebyaka (Lachspastete)', category:'Russisch', ingredients:[
+        {name:'Blätterteig', amount:500, unit:'g'},
+        {name:'Lachsfilet', amount:400, unit:'g'},
+        {name:'Reis (gekocht)', amount:200, unit:'g'},
+        {name:'Eier', amount:3, unit:'Stk'},
+        {name:'Champignons', amount:200, unit:'g'},
+        {name:'Dill (frisch)', amount:0.5, unit:'Bund'},
+    ]},
+
+    // ── ASIATISCH ──
+    { id:'as01', name:'Pad Thai', category:'Asiatisch', ingredients:[
+        {name:'Reisnudeln (flach)', amount:300, unit:'g'},
+        {name:'Hähnchenbrust', amount:400, unit:'g'},
+        {name:'Eier', amount:3, unit:'Stk'},
+        {name:'Sojasprossen', amount:200, unit:'g'},
+        {name:'Erdnüsse (geröstet)', amount:80, unit:'g'},
+        {name:'Fischsauce', amount:3, unit:'EL'},
+        {name:'Tamarindenpaste', amount:2, unit:'EL'},
+    ]},
+    { id:'as02', name:'Sushi Maki', category:'Asiatisch', ingredients:[
+        {name:'Sushireis', amount:400, unit:'g'},
+        {name:'Noriblätter', amount:6, unit:'Stk'},
+        {name:'Lachsfilet (roh)', amount:200, unit:'g'},
+        {name:'Gurke', amount:1, unit:'Stk'},
+        {name:'Avocado', amount:1, unit:'Stk'},
+        {name:'Reisessig', amount:3, unit:'EL'},
+        {name:'Wasabi', amount:1, unit:'TL'},
+    ]},
+    { id:'as03', name:'Gebratener Reis', category:'Asiatisch', ingredients:[
+        {name:'Jasminreis (gekocht)', amount:600, unit:'g'},
+        {name:'Eier', amount:3, unit:'Stk'},
+        {name:'Erbsen (TK)', amount:150, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Sojasoße', amount:4, unit:'EL'},
+        {name:'Sesamöl', amount:1, unit:'EL'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+    ]},
+    { id:'as04', name:'Tom Yum Suppe', category:'Asiatisch', ingredients:[
+        {name:'Garnelen', amount:400, unit:'g'},
+        {name:'Zitronengras', amount:2, unit:'Stangen'},
+        {name:'Galgant', amount:3, unit:'Scheiben'},
+        {name:'Kaffirlimettenblätter', amount:5, unit:'Stk'},
+        {name:'Champignons', amount:200, unit:'g'},
+        {name:'Fischsauce', amount:2, unit:'EL'},
+        {name:'Hühnerbrühe', amount:1000, unit:'ml'},
+    ]},
+    { id:'as05', name:'Ramen', category:'Asiatisch', ingredients:[
+        {name:'Ramen-Nudeln', amount:400, unit:'g'},
+        {name:'Schweinebauch (Chashu)', amount:400, unit:'g'},
+        {name:'Sojasoße', amount:4, unit:'EL'},
+        {name:'Mirin', amount:2, unit:'EL'},
+        {name:'Bambussprossen', amount:100, unit:'g'},
+        {name:'Noriblätter', amount:4, unit:'Stk'},
+        {name:'Hühnerbrühe', amount:1500, unit:'ml'},
+    ]},
+    { id:'as06', name:'Bibimbap', category:'Asiatisch', ingredients:[
+        {name:'Jasminreis', amount:400, unit:'g'},
+        {name:'Rinderhackfleisch', amount:250, unit:'g'},
+        {name:'Spinat (TK)', amount:200, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Zucchini', amount:1, unit:'Stk'},
+        {name:'Gochujang', amount:3, unit:'EL'},
+        {name:'Sesamöl', amount:2, unit:'EL'},
+    ]},
+    { id:'as07', name:'Green Curry', category:'Asiatisch', ingredients:[
+        {name:'Hähnchenbrust', amount:600, unit:'g'},
+        {name:'Kokosmilch', amount:400, unit:'ml'},
+        {name:'Grüne Currypaste', amount:2, unit:'EL'},
+        {name:'Bambussprossen', amount:100, unit:'g'},
+        {name:'Zucchini', amount:1, unit:'Stk'},
+        {name:'Basilikum (Thai)', amount:0.5, unit:'Bund'},
+        {name:'Fischsauce', amount:2, unit:'EL'},
+    ]},
+    { id:'as08', name:'Mapo Tofu', category:'Asiatisch', ingredients:[
+        {name:'Seidentofu', amount:400, unit:'g'},
+        {name:'Hackfleisch (Schwein)', amount:200, unit:'g'},
+        {name:'Doubanjiang (Chiliwürzpaste)', amount:2, unit:'EL'},
+        {name:'Sichuan-Pfeffer', amount:1, unit:'TL'},
+        {name:'Knoblauch', amount:3, unit:'Zehen'},
+        {name:'Ingwer (frisch)', amount:1, unit:'TL'},
+        {name:'Hühnerbrühe', amount:200, unit:'ml'},
+    ]},
+    { id:'as09', name:'Jiaozi (Dumplings)', category:'Asiatisch', ingredients:[
+        {name:'Mehl', amount:300, unit:'g'},
+        {name:'Hackfleisch (Schwein)', amount:300, unit:'g'},
+        {name:'Weißkohl', amount:200, unit:'g'},
+        {name:'Ingwer (frisch)', amount:1, unit:'EL'},
+        {name:'Sojasoße', amount:3, unit:'EL'},
+        {name:'Sesamöl', amount:1, unit:'EL'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+    ]},
+    { id:'as10', name:'Teriyaki Hähnchen', category:'Asiatisch', ingredients:[
+        {name:'Hähnchenbrust', amount:600, unit:'g'},
+        {name:'Sojasoße', amount:4, unit:'EL'},
+        {name:'Mirin', amount:3, unit:'EL'},
+        {name:'Zucker', amount:2, unit:'EL'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Ingwer (frisch)', amount:1, unit:'TL'},
+        {name:'Sesamöl', amount:1, unit:'EL'},
+    ]},
+    { id:'as11', name:'Pho Bo', category:'Asiatisch', ingredients:[
+        {name:'Rinderknochen', amount:1000, unit:'g'},
+        {name:'Reisnudeln', amount:400, unit:'g'},
+        {name:'Rindfleisch (dünn geschnitten)', amount:300, unit:'g'},
+        {name:'Ingwer (frisch)', amount:40, unit:'g'},
+        {name:'Sternanis', amount:3, unit:'Stk'},
+        {name:'Fischsauce', amount:3, unit:'EL'},
+        {name:'Sojasprossen', amount:150, unit:'g'},
+    ]},
+    { id:'as12', name:'Nasi Goreng', category:'Asiatisch', ingredients:[
+        {name:'Jasminreis (gekocht)', amount:600, unit:'g'},
+        {name:'Eier', amount:3, unit:'Stk'},
+        {name:'Hähnchenbrust', amount:300, unit:'g'},
+        {name:'Schalotten', amount:3, unit:'Stk'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Kecap Manis (süße Sojasoße)', amount:3, unit:'EL'},
+        {name:'Sambal Oelek', amount:1, unit:'EL'},
+    ]},
+    { id:'as13', name:'Kung Pao Hähnchen', category:'Asiatisch', ingredients:[
+        {name:'Hähnchenbrust', amount:500, unit:'g'},
+        {name:'Erdnüsse (geröstet)', amount:80, unit:'g'},
+        {name:'Rote Chilis', amount:4, unit:'Stk'},
+        {name:'Sichuan-Pfeffer', amount:1, unit:'TL'},
+        {name:'Frühlingszwiebeln', amount:4, unit:'Stk'},
+        {name:'Sojasoße', amount:3, unit:'EL'},
+        {name:'Ingwer (frisch)', amount:1, unit:'TL'},
+    ]},
+    { id:'as14', name:'Frühlingsrollen', category:'Asiatisch', ingredients:[
+        {name:'Reispapier', amount:16, unit:'Blätter'},
+        {name:'Glasnudeln', amount:100, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Weißkohl', amount:200, unit:'g'},
+        {name:'Champignons', amount:150, unit:'g'},
+        {name:'Frühlingszwiebeln', amount:4, unit:'Stk'},
+        {name:'Fischsauce', amount:2, unit:'EL'},
+    ]},
+    { id:'as15', name:'Bulgogi', category:'Asiatisch', ingredients:[
+        {name:'Rindfleisch (dünn geschnitten)', amount:600, unit:'g'},
+        {name:'Sojasoße', amount:4, unit:'EL'},
+        {name:'Birne (gerieben)', amount:0.5, unit:'Stk'},
+        {name:'Knoblauch', amount:3, unit:'Zehen'},
+        {name:'Ingwer (frisch)', amount:1, unit:'TL'},
+        {name:'Sesamöl', amount:2, unit:'EL'},
+        {name:'Frühlingszwiebeln', amount:4, unit:'Stk'},
+    ]},
+    { id:'as16', name:'Tonkatsu', category:'Asiatisch', ingredients:[
+        {name:'Schweinekoteletts', amount:600, unit:'g'},
+        {name:'Mehl', amount:80, unit:'g'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Panko-Semmelbrösel', amount:150, unit:'g'},
+        {name:'Öl (zum Frittieren)', amount:500, unit:'ml'},
+        {name:'Tonkatsu-Sauce', amount:4, unit:'EL'},
+    ]},
+    { id:'as17', name:'Laksa', category:'Asiatisch', ingredients:[
+        {name:'Reisnudeln', amount:300, unit:'g'},
+        {name:'Garnelen', amount:300, unit:'g'},
+        {name:'Kokosmilch', amount:400, unit:'ml'},
+        {name:'Laksa-Paste', amount:3, unit:'EL'},
+        {name:'Tofu (gebraten)', amount:200, unit:'g'},
+        {name:'Sojasprossen', amount:150, unit:'g'},
+        {name:'Koriander (frisch)', amount:0.5, unit:'Bund'},
+    ]},
+    { id:'as18', name:'Banh Mi', category:'Asiatisch', ingredients:[
+        {name:'Baguette', amount:2, unit:'Stk'},
+        {name:'Schweinebauch', amount:300, unit:'g'},
+        {name:'Karotten (gerieben)', amount:100, unit:'g'},
+        {name:'Daikon-Rettich', amount:100, unit:'g'},
+        {name:'Gurke', amount:1, unit:'Stk'},
+        {name:'Koriander (frisch)', amount:0.5, unit:'Bund'},
+        {name:'Mayonnaise', amount:3, unit:'EL'},
+    ]},
+    { id:'as19', name:'Hähnchen-Gemüse-Pfanne mit Reis', category:'Asiatisch', ingredients:[
+        {name:'Hähnchenbrust', amount:600, unit:'g'},
+        {name:'Reis', amount:300, unit:'g'},
+        {name:'Paprika (rot)', amount:2, unit:'Stk'},
+        {name:'Zucchini', amount:1, unit:'Stk'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Sojasoße', amount:3, unit:'EL'},
+        {name:'Sesamöl', amount:2, unit:'EL'},
+    ]},
+    { id:'as20', name:'Asiatische Gebratene Nudeln', category:'Asiatisch', ingredients:[
+        {name:'Eiernudeln', amount:400, unit:'g'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Frühlingszwiebeln', amount:3, unit:'Stk'},
+        {name:'Paprika (gelb)', amount:1, unit:'Stk'},
+        {name:'Sojasoße', amount:4, unit:'EL'},
+        {name:'Sesamöl', amount:1, unit:'EL'},
+        {name:'Ingwer (frisch)', amount:1, unit:'TL'},
+    ]},
+
+    // ── DEUTSCH ──
+    { id:'de01', name:'Wiener Schnitzel', category:'Deutsch', ingredients:[
+        {name:'Kalbsschnitzel', amount:600, unit:'g'},
+        {name:'Mehl', amount:80, unit:'g'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Semmelbrösel', amount:150, unit:'g'},
+        {name:'Butterschmalz', amount:100, unit:'g'},
+        {name:'Zitrone', amount:1, unit:'Stk'},
+    ]},
+    { id:'de02', name:'Sauerbraten', category:'Deutsch', ingredients:[
+        {name:'Rinderbraten', amount:1200, unit:'g'},
+        {name:'Rotweinessig', amount:200, unit:'ml'},
+        {name:'Rotwein', amount:200, unit:'ml'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Gewürznelken', amount:5, unit:'Stk'},
+        {name:'Rosinen', amount:50, unit:'g'},
+    ]},
+    { id:'de03', name:'Kartoffelsuppe', category:'Deutsch', ingredients:[
+        {name:'Kartoffeln', amount:800, unit:'g'},
+        {name:'Möhren', amount:2, unit:'Stk'},
+        {name:'Sellerie', amount:100, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Gemüsebrühe', amount:1000, unit:'ml'},
+        {name:'Sahne', amount:100, unit:'ml'},
+        {name:'Majoran', amount:1, unit:'TL'},
+    ]},
+    { id:'de04', name:'Bratwurst mit Sauerkraut', category:'Deutsch', ingredients:[
+        {name:'Bratwürste', amount:6, unit:'Stk'},
+        {name:'Sauerkraut', amount:500, unit:'g'},
+        {name:'Speck (gewürfelt)', amount:100, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Kümmel', amount:1, unit:'TL'},
+        {name:'Fleischbrühe', amount:200, unit:'ml'},
+    ]},
+    { id:'de05', name:'Gulasch', category:'Deutsch', ingredients:[
+        {name:'Rindfleisch (Schulter)', amount:800, unit:'g'},
+        {name:'Zwiebeln', amount:3, unit:'Stk'},
+        {name:'Paprikapulver (edelsüß)', amount:2, unit:'EL'},
+        {name:'Tomatenmark', amount:2, unit:'EL'},
+        {name:'Rinderfond', amount:500, unit:'ml'},
+        {name:'Kartoffeln', amount:500, unit:'g'},
+    ]},
+    { id:'de06', name:'Rouladen', category:'Deutsch', ingredients:[
+        {name:'Rinderrouladen', amount:4, unit:'Stk'},
+        {name:'Senf (mittelscharf)', amount:4, unit:'EL'},
+        {name:'Speck (dünn)', amount:100, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Essiggurken', amount:4, unit:'Stk'},
+        {name:'Rinderfond', amount:500, unit:'ml'},
+        {name:'Rotwein', amount:150, unit:'ml'},
+    ]},
+    { id:'de07', name:'Käsespätzle', category:'Deutsch', ingredients:[
+        {name:'Mehl', amount:400, unit:'g'},
+        {name:'Eier', amount:5, unit:'Stk'},
+        {name:'Emmentaler (gerieben)', amount:250, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Butter', amount:60, unit:'g'},
+    ]},
+    { id:'de08', name:'Erbsensuppe', category:'Deutsch', ingredients:[
+        {name:'Gelbe Erbsen (getrocknet)', amount:400, unit:'g'},
+        {name:'Speck (gewürfelt)', amount:150, unit:'g'},
+        {name:'Kartoffeln', amount:400, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Lauch', amount:1, unit:'Stange'},
+        {name:'Fleischbrühe', amount:1500, unit:'ml'},
+    ]},
+    { id:'de09', name:'Schweinebraten mit Knödeln', category:'Deutsch', ingredients:[
+        {name:'Schweinebraten (mit Schwarte)', amount:1500, unit:'g'},
+        {name:'Kartoffelklöße', amount:8, unit:'Stk'},
+        {name:'Bier (dunkles)', amount:330, unit:'ml'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Knoblauch', amount:3, unit:'Zehen'},
+        {name:'Kümmel', amount:1, unit:'TL'},
+    ]},
+    { id:'de10', name:'Linsensuppe mit Würstchen', category:'Deutsch', ingredients:[
+        {name:'Braune Linsen', amount:300, unit:'g'},
+        {name:'Wiener Würstchen', amount:4, unit:'Stk'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Sellerie', amount:100, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Essig', amount:1, unit:'EL'},
+        {name:'Gemüsebrühe', amount:1200, unit:'ml'},
+    ]},
+    { id:'de11', name:'Königsberger Klopse', category:'Deutsch', ingredients:[
+        {name:'Hackfleisch (gemischt)', amount:600, unit:'g'},
+        {name:'Kapern', amount:2, unit:'EL'},
+        {name:'Sardellenpaste', amount:1, unit:'EL'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Zitronensaft', amount:1, unit:'EL'},
+        {name:'Sahne', amount:200, unit:'ml'},
+    ]},
+    { id:'de12', name:'Flammkuchen', category:'Deutsch', ingredients:[
+        {name:'Mehl', amount:300, unit:'g'},
+        {name:'Hefe', amount:8, unit:'g'},
+        {name:'Schmand', amount:200, unit:'g'},
+        {name:'Speck (gewürfelt)', amount:150, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+    ]},
+    { id:'de13', name:'Falscher Hase', category:'Deutsch', ingredients:[
+        {name:'Hackfleisch (gemischt)', amount:700, unit:'g'},
+        {name:'Eier', amount:2, unit:'Stk'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Senfgurken', amount:3, unit:'Stk'},
+        {name:'Semmelbrösel', amount:60, unit:'g'},
+        {name:'Öl', amount:3, unit:'EL'},
+    ]},
+    { id:'de14', name:'Zwiebelrostbraten', category:'Deutsch', ingredients:[
+        {name:'Rindfleisch (Rostbraten)', amount:800, unit:'g'},
+        {name:'Zwiebeln', amount:4, unit:'Stk'},
+        {name:'Butter', amount:50, unit:'g'},
+        {name:'Rinderbrühe', amount:300, unit:'ml'},
+        {name:'Rotwein', amount:100, unit:'ml'},
+        {name:'Thymian', amount:2, unit:'Zweige'},
+    ]},
+    { id:'de15', name:'Himmel und Erde', category:'Deutsch', ingredients:[
+        {name:'Kartoffeln', amount:600, unit:'g'},
+        {name:'Äpfel', amount:3, unit:'Stk'},
+        {name:'Blutwurst', amount:400, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Butter', amount:40, unit:'g'},
+        {name:'Speck (gewürfelt)', amount:100, unit:'g'},
+    ]},
+    { id:'de16', name:'Lachs mit Kartoffeln & Brokkoli', category:'Deutsch', ingredients:[
+        {name:'Lachsfilet', amount:600, unit:'g'},
+        {name:'Kartoffeln', amount:600, unit:'g'},
+        {name:'Brokkoli', amount:400, unit:'g'},
+        {name:'Zitrone', amount:1, unit:'Stk'},
+        {name:'Olivenöl', amount:3, unit:'EL'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+    ]},
+    { id:'de17', name:'Currywurst', category:'Deutsch', ingredients:[
+        {name:'Bratwürste', amount:6, unit:'Stk'},
+        {name:'Tomatenmark', amount:3, unit:'EL'},
+        {name:'Currypulver', amount:2, unit:'EL'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Zucker', amount:1, unit:'EL'},
+        {name:'Worcestershiresauce', amount:1, unit:'EL'},
+    ]},
+    { id:'de18', name:'Pfannkuchen', category:'Deutsch', ingredients:[
+        {name:'Mehl', amount:250, unit:'g'},
+        {name:'Milch', amount:500, unit:'ml'},
+        {name:'Eier', amount:3, unit:'Stk'},
+        {name:'Butter', amount:30, unit:'g'},
+        {name:'Salz', amount:1, unit:'Prise'},
+    ]},
+    { id:'de19', name:'Grünkohl mit Pinkel', category:'Deutsch', ingredients:[
+        {name:'Grünkohl (frisch)', amount:1500, unit:'g'},
+        {name:'Pinkelwurst', amount:4, unit:'Stk'},
+        {name:'Kassler', amount:600, unit:'g'},
+        {name:'Speck (durchwachsen)', amount:200, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Schmalz', amount:3, unit:'EL'},
+        {name:'Hafergrütze', amount:100, unit:'g'},
+    ]},
+    { id:'de20', name:'Rheinischer Sauerbraten', category:'Deutsch', ingredients:[
+        {name:'Rinderbraten', amount:1200, unit:'g'},
+        {name:'Rotwein', amount:250, unit:'ml'},
+        {name:'Rotweinessig', amount:200, unit:'ml'},
+        {name:'Rosinen', amount:80, unit:'g'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Lorbeerblätter', amount:3, unit:'Stk'},
+        {name:'Lebkuchengewürz', amount:1, unit:'TL'},
+    ]},
+
+    // ── INTERNATIONAL ──
+    { id:'in01', name:'Paella Valenciana', category:'International', ingredients:[
+        {name:'Paella-Reis (Bomba)', amount:400, unit:'g'},
+        {name:'Hähnchenschenkel', amount:600, unit:'g'},
+        {name:'Chorizo', amount:150, unit:'g'},
+        {name:'Paprika (rot & grün)', amount:2, unit:'Stk'},
+        {name:'Tomaten', amount:2, unit:'Stk'},
+        {name:'Safranfäden', amount:0.5, unit:'g'},
+        {name:'Gemüsebrühe', amount:1000, unit:'ml'},
+    ]},
+    { id:'in02', name:'Moussaka', category:'International', ingredients:[
+        {name:'Auberginen', amount:800, unit:'g'},
+        {name:'Hackfleisch (Lamm)', amount:500, unit:'g'},
+        {name:'Bechamelsauce', amount:400, unit:'ml'},
+        {name:'Tomaten (gehackt)', amount:400, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Zimt', amount:0.5, unit:'TL'},
+        {name:'Parmesan', amount:50, unit:'g'},
+    ]},
+    { id:'in03', name:'Tacos al Pastor', category:'International', ingredients:[
+        {name:'Schweineschulter', amount:800, unit:'g'},
+        {name:'Maistortillas', amount:12, unit:'Stk'},
+        {name:'Ananas', amount:200, unit:'g'},
+        {name:'Chili (getrocknet)', amount:3, unit:'Stk'},
+        {name:'Koriander (frisch)', amount:1, unit:'Bund'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Limetten', amount:3, unit:'Stk'},
+    ]},
+    { id:'in04', name:'Falafel mit Hummus', category:'International', ingredients:[
+        {name:'Kichererbsen (getrocknet)', amount:400, unit:'g'},
+        {name:'Knoblauch', amount:3, unit:'Zehen'},
+        {name:'Koriander (frisch)', amount:1, unit:'Bund'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Tahini', amount:4, unit:'EL'},
+        {name:'Zitronensaft', amount:3, unit:'EL'},
+        {name:'Pita-Brot', amount:4, unit:'Stk'},
+    ]},
+    { id:'in05', name:'Shakshuka', category:'International', ingredients:[
+        {name:'Eier', amount:6, unit:'Stk'},
+        {name:'Tomaten (gehackt)', amount:800, unit:'g'},
+        {name:'Paprika (rot)', amount:2, unit:'Stk'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:3, unit:'Zehen'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Paprikapulver', amount:1, unit:'TL'},
+    ]},
+    { id:'in06', name:'Hamburger', category:'International', ingredients:[
+        {name:'Hackfleisch (Rind)', amount:600, unit:'g'},
+        {name:'Brioche-Buns', amount:4, unit:'Stk'},
+        {name:'Cheddar', amount:4, unit:'Scheiben'},
+        {name:'Salat', amount:4, unit:'Blätter'},
+        {name:'Tomaten', amount:2, unit:'Stk'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Ketchup & Senf', amount:4, unit:'EL'},
+    ]},
+    { id:'in07', name:'Couscous mit Gemüse', category:'International', ingredients:[
+        {name:'Couscous', amount:300, unit:'g'},
+        {name:'Kichererbsen (Dose)', amount:400, unit:'g'},
+        {name:'Zucchini', amount:1, unit:'Stk'},
+        {name:'Paprika (rot)', amount:1, unit:'Stk'},
+        {name:'Karotten', amount:2, unit:'Stk'},
+        {name:'Ras el Hanout', amount:1, unit:'EL'},
+        {name:'Gemüsebrühe', amount:400, unit:'ml'},
+    ]},
+    { id:'in08', name:'Börek', category:'International', ingredients:[
+        {name:'Yufka-Teig', amount:6, unit:'Blätter'},
+        {name:'Spinat (TK)', amount:300, unit:'g'},
+        {name:'Fetakäse', amount:200, unit:'g'},
+        {name:'Eier', amount:3, unit:'Stk'},
+        {name:'Öl', amount:4, unit:'EL'},
+        {name:'Schwarzkümmel', amount:1, unit:'TL'},
+    ]},
+    { id:'in09', name:'Tajine mit Hähnchen', category:'International', ingredients:[
+        {name:'Hähnchenschenkel', amount:1200, unit:'g'},
+        {name:'Eingelegte Zitronen', amount:2, unit:'Stk'},
+        {name:'Grüne Oliven', amount:100, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Safranfäden', amount:0.5, unit:'g'},
+        {name:'Koriander (frisch)', amount:0.5, unit:'Bund'},
+    ]},
+    { id:'in10', name:'Chili con Carne', category:'International', ingredients:[
+        {name:'Hackfleisch (gemischt)', amount:500, unit:'g'},
+        {name:'Kidneybohnen (Dose)', amount:400, unit:'g'},
+        {name:'Mais (Dose)', amount:200, unit:'g'},
+        {name:'Passierte Tomaten', amount:400, unit:'ml'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Chili', amount:1, unit:'Stk'},
+        {name:'Paprikapulver (edelsüß)', amount:2, unit:'TL'},
+    ]},
+    { id:'in11', name:'Fish and Chips', category:'International', ingredients:[
+        {name:'Kabeljaufilet', amount:600, unit:'g'},
+        {name:'Mehl', amount:200, unit:'g'},
+        {name:'Bier (hell)', amount:200, unit:'ml'},
+        {name:'Kartoffeln', amount:800, unit:'g'},
+        {name:'Öl (zum Frittieren)', amount:1000, unit:'ml'},
+        {name:'Zitrone', amount:1, unit:'Stk'},
+    ]},
+    { id:'in12', name:'Caesar Salat', category:'International', ingredients:[
+        {name:'Römersalat', amount:2, unit:'Köpfe'},
+        {name:'Hähnchenbrust', amount:400, unit:'g'},
+        {name:'Croutons', amount:80, unit:'g'},
+        {name:'Parmesan', amount:60, unit:'g'},
+        {name:'Caesar-Dressing', amount:100, unit:'ml'},
+        {name:'Sardellen', amount:4, unit:'Stk'},
+    ]},
+    { id:'in13', name:'Spanische Tortilla', category:'International', ingredients:[
+        {name:'Eier', amount:6, unit:'Stk'},
+        {name:'Kartoffeln', amount:600, unit:'g'},
+        {name:'Zwiebeln', amount:2, unit:'Stk'},
+        {name:'Olivenöl', amount:6, unit:'EL'},
+    ]},
+    { id:'in14', name:'Gazpacho', category:'International', ingredients:[
+        {name:'Tomaten (reif)', amount:1000, unit:'g'},
+        {name:'Gurke', amount:1, unit:'Stk'},
+        {name:'Paprika (rot)', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Olivenöl', amount:4, unit:'EL'},
+        {name:'Sherry-Essig', amount:2, unit:'EL'},
+        {name:'Altbrot', amount:60, unit:'g'},
+    ]},
+    { id:'in15', name:'Jerk Chicken', category:'International', ingredients:[
+        {name:'Hähnchenschenkel', amount:1200, unit:'g'},
+        {name:'Scotch-Bonnet-Chili', amount:2, unit:'Stk'},
+        {name:'Piment (Allspice)', amount:1, unit:'EL'},
+        {name:'Ingwer (frisch)', amount:2, unit:'EL'},
+        {name:'Thymian', amount:3, unit:'Zweige'},
+        {name:'Knoblauch', amount:4, unit:'Zehen'},
+        {name:'Zitronensaft', amount:3, unit:'EL'},
+    ]},
+    { id:'in16', name:'Lammkebab', category:'International', ingredients:[
+        {name:'Lammhackfleisch', amount:600, unit:'g'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Petersilie (frisch)', amount:0.5, unit:'Bund'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Paprikapulver', amount:1, unit:'TL'},
+        {name:'Pita-Brot', amount:4, unit:'Stk'},
+        {name:'Joghurt', amount:150, unit:'g'},
+    ]},
+    { id:'in17', name:'Rote Linsensuppe', category:'International', ingredients:[
+        {name:'Rote Linsen', amount:250, unit:'g'},
+        {name:'Möhren', amount:2, unit:'Stk'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:2, unit:'Zehen'},
+        {name:'Gemüsebrühe', amount:1000, unit:'ml'},
+        {name:'Kreuzkümmel', amount:1, unit:'TL'},
+        {name:'Olivenöl', amount:2, unit:'EL'},
+    ]},
+    { id:'in18', name:'Kichererbsen-Curry', category:'International', ingredients:[
+        {name:'Basmatireis', amount:300, unit:'g'},
+        {name:'Kichererbsen (Dose)', amount:400, unit:'g'},
+        {name:'Kokosmilch', amount:400, unit:'ml'},
+        {name:'Blattspinat (TK)', amount:200, unit:'g'},
+        {name:'Tomaten (gehackt)', amount:400, unit:'g'},
+        {name:'Currypaste', amount:2, unit:'EL'},
+        {name:'Zwiebeln', amount:1, unit:'Stk'},
+    ]},
+    { id:'in19', name:'Gyros mit Tzatziki', category:'International', ingredients:[
+        {name:'Schweinefleisch (Hals)', amount:800, unit:'g'},
+        {name:'Joghurt (10% Fett)', amount:300, unit:'g'},
+        {name:'Gurke', amount:1, unit:'Stk'},
+        {name:'Knoblauch', amount:3, unit:'Zehen'},
+        {name:'Dill (frisch)', amount:0.5, unit:'Bund'},
+        {name:'Pita-Brot', amount:4, unit:'Stk'},
+        {name:'Olivenöl', amount:3, unit:'EL'},
+    ]},
+    { id:'in20', name:'Beef Rendang', category:'International', ingredients:[
+        {name:'Rindfleisch (Schulter)', amount:800, unit:'g'},
+        {name:'Kokosmilch', amount:400, unit:'ml'},
+        {name:'Zitronengras', amount:2, unit:'Stangen'},
+        {name:'Galgant', amount:3, unit:'Scheiben'},
+        {name:'Chilipaste', amount:3, unit:'EL'},
+        {name:'Kurkuma', amount:1, unit:'TL'},
+        {name:'Kaffirlimettenblätter', amount:5, unit:'Stk'},
+    ]},
+];
+
+// ── STATE ──
+const LS = { meals: 'wp_meals_v4', weeks: 'wp_weeks_v1', curWeek: 'wp_curweek_v1', checked: 'wp_checked_v3', recipes: 'wp_recipes_v1', shopCustom: 'wp_shop_custom_v1', shopAmounts: 'wp_shop_amounts_v1', favorites: 'wp_favorites_v1' };
+let meals = [], weekPlans = {}, currentWeek = '', checkedItems = {}, recipeCache = {}, activeCategory = 'Alle', customShopItems = [], amountOverrides = {}, favoriteMeals = new Set(), mealSearch = '';
+
+function loadState() {
+    const p = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+    meals        = p(LS.meals,   JSON.parse(JSON.stringify(DEFAULT_MEALS)));
+    weekPlans    = p(LS.weeks,   {});
+    currentWeek  = todayWeekKey();
+    checkedItems = p(LS.checked, {});
+    recipeCache      = p(LS.recipes,     {});
+    customShopItems  = p(LS.shopCustom,  []);
+    amountOverrides  = p(LS.shopAmounts, {});
+    favoriteMeals    = new Set(p(LS.favorites, []));
+}
+function save() {
+    localStorage.setItem(LS.meals,       JSON.stringify(meals));
+    localStorage.setItem(LS.weeks,       JSON.stringify(weekPlans));
+    localStorage.setItem(LS.shopCustom,  JSON.stringify(customShopItems));
+    localStorage.setItem(LS.shopAmounts, JSON.stringify(amountOverrides));
+    localStorage.setItem(LS.favorites,   JSON.stringify([...favoriteMeals]));
+    localStorage.setItem(LS.curWeek,     JSON.stringify(currentWeek));
+    localStorage.setItem(LS.recipes,     JSON.stringify(recipeCache));
+    localStorage.setItem(LS.checked,     JSON.stringify(checkedItems));
+}
+function emptyWeek() {
+    const w = {};
+    DAYS.forEach(d => { w[d.key] = { breakfast: null, lunch: null, dinner: null }; });
+    return w;
+}
+function currentPlan() {
+    if (!weekPlans[currentWeek]) weekPlans[currentWeek] = emptyWeek();
+    return weekPlans[currentWeek];
+}
+
+// ── CALENDAR WEEK UTILS ──
+function todayWeekKey() { return dateToWeekKey(new Date()); }
+
+function dateToWeekKey(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    // ISO week: Thursday of the week determines the year
+    d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+    const jan4 = new Date(d.getFullYear(), 0, 4);
+    const weekNum = 1 + Math.round(((d - jan4) / 86400000 - 3 + (jan4.getDay() + 6) % 7) / 7);
+    return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+function weekKeyToMonday(key) {
+    const [yearStr, wStr] = key.split('-W');
+    const year = parseInt(yearStr), wn = parseInt(wStr);
+    // Jan 4 is always in ISO week 1
+    const jan4 = new Date(year, 0, 4);
+    const week1Mon = new Date(jan4);
+    week1Mon.setDate(jan4.getDate() - (jan4.getDay() + 6) % 7);
+    const mon = new Date(week1Mon);
+    mon.setDate(week1Mon.getDate() + (wn - 1) * 7);
+    return mon;
+}
+
+function shiftWeekKey(key, delta) {
+    const mon = weekKeyToMonday(key);
+    mon.setDate(mon.getDate() + delta * 7);
+    return dateToWeekKey(mon);
+}
+
+function formatWeekLabel(key) {
+    const [, wStr] = key.split('-W');
+    const kw  = parseInt(wStr);
+    const mon = weekKeyToMonday(key);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const fmt = d => d.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+    const year = sun.getFullYear();
+    return { kw, range: `${fmt(mon)} – ${fmt(sun)} ${year}` };
+}
+
+// ── UTILS ──
+function h(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fmtAmt(n) {
+    const r = Math.round(n * 1000) / 1000;
+    return r % 1 === 0 ? r.toFixed(0) : r.toString();
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+const CHEVRON = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 6,8 10,4"/></svg>`;
+
+// ── PANELS ──
+function openMealsPanel() {
+    document.getElementById('panel-meals').classList.add('open');
+}
+function closeMealsPanel() {
+    document.getElementById('panel-meals').classList.remove('open');
+    mealSearch = '';
+    const inp = document.getElementById('meal-search-inp');
+    if (inp) inp.value = '';
+}
+function openShoppingPanel() {
+    renderShoppingList();
+    document.getElementById('panel-shopping').classList.add('open');
+}
+function closeShoppingPanel() {
+    document.getElementById('panel-shopping').classList.remove('open');
+}
+
+// ── MEAL LIBRARY ──
+function getCategories() {
+    const base = ['Italienisch', 'Russisch', 'Asiatisch', 'Deutsch', 'International'];
+    const existing = new Set(meals.map(m => m.category || 'International'));
+    const result = base.filter(c => existing.has(c));
+    [...existing].filter(c => !base.includes(c)).sort((a, b) => a.localeCompare(b, 'de')).forEach(c => result.push(c));
+    return ['Alle', 'Favoriten', ...result];
+}
+
+function filterCategory(cat) {
+    activeCategory = cat;
+    document.querySelectorAll('.cat-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.cat === cat));
+    renderMealsList();
+}
+
+function renderMeals() {
+    // Render category filter buttons
+    const filterEl = document.getElementById('cat-filter');
+    filterEl.innerHTML = getCategories().map(cat => {
+        const isFav = cat === 'Favoriten';
+        return `<button class="cat-btn${isFav ? ' fav-cat' : ''}${cat === activeCategory ? ' active' : ''}" data-cat="${h(cat)}" onclick="filterCategory('${h(cat)}')">${isFav ? '★ ' : ''}${h(cat)}</button>`;
+    }).join('');
+    renderMealsList();
+}
+
+function renderMealsList() {
+    const el = document.getElementById('meals-list');
+    const q = mealSearch.trim().toLowerCase();
+
+    let base = activeCategory === 'Alle'
+        ? meals
+        : activeCategory === 'Favoriten'
+            ? meals.filter(m => favoriteMeals.has(m.id))
+            : meals.filter(m => (m.category || 'International') === activeCategory);
+
+    const filtered = q ? base.filter(m => m.name.toLowerCase().includes(q)) : base;
+
+    if (!filtered.length) {
+        const msg = q
+            ? `Kein Gericht gefunden für „${h(mealSearch)}".`
+            : activeCategory === 'Favoriten'
+                ? 'Noch keine Favoriten. Klicke auf den ★ bei einem Gericht.'
+                : 'Füge ein Gericht hinzu oder wähle eine andere Kategorie.';
+        el.innerHTML = `<div class="empty">
+            <svg class="empty-svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="6" y="8" width="28" height="24" rx="3"/>
+                <line x1="12" y1="16" x2="28" y2="16"/>
+                <line x1="12" y1="22" x2="22" y2="22"/>
+            </svg>
+            <strong>${q ? 'Keine Treffer' : activeCategory === 'Favoriten' ? 'Keine Favoriten' : 'Keine Gerichte'}</strong>
+            <p>${msg}</p>
+        </div>`;
+        return;
+    }
+
+    // Group by category only when "Alle" and no search active
+    const groups = (activeCategory === 'Alle' && !q)
+        ? getCategories().slice(2).map(cat => ({ cat, items: filtered.filter(m => (m.category || 'International') === cat) })).filter(g => g.items.length)
+        : [{ cat: null, items: filtered }];
+
+    el.innerHTML = groups.map(g => `
+        ${g.cat ? `<div class="cat-section-title">${h(g.cat)}</div>` : ''}
+        ${g.items.map(m => `
+        <div class="meal-card" id="mc-${h(m.id)}">
+            <div class="meal-head" onclick="toggleCard('${h(m.id)}')">
+                <span class="meal-thumb" id="thumb-${h(m.id)}"></span>
+                <span class="meal-title">${h(m.name)}</span>
+                <span class="meal-badge">${m.ingredients.length} Zutaten</span>
+                <button class="fav-btn${favoriteMeals.has(m.id) ? ' active' : ''}" onclick="event.stopPropagation();toggleFav('${h(m.id)}')" title="Favorit">★</button>
+                <span class="chevron">${CHEVRON}</span>
+            </div>
+            <div class="meal-body">
+                <table class="ing-table">
+                    ${m.ingredients.map(i => `<tr>
+                        <td class="td-amt">${fmtAmt(i.amount)} ${h(i.unit)}</td>
+                        <td>${h(i.name)}</td>
+                    </tr>`).join('')}
+                </table>
+                <div class="meal-foot">
+                    <button class="btn btn-outline btn-sm" onclick="openEditModal('${h(m.id)}')">Bearbeiten</button>
+                    <button class="btn btn-outline btn-sm" onclick="showRecipe('${h(m.id)}')">Rezept</button>
+                    <button class="btn btn-outline btn-sm" onclick="showImg('${h(m.id)}')">Bild</button>
+                    <button class="btn btn-ghost" onclick="deleteMeal('${h(m.id)}')">Löschen</button>
+                </div>
+            </div>
+        </div>`).join('')}
+    `).join('');
+    loadThumbnails();
+}
+
+function toggleCard(id) { document.getElementById('mc-' + id)?.classList.toggle('open'); }
+
+function toggleFav(id) {
+    if (favoriteMeals.has(id)) favoriteMeals.delete(id);
+    else favoriteMeals.add(id);
+    save();
+    renderMealsList();
+}
+
+function setMealSearch(val) {
+    mealSearch = val;
+    renderMealsList();
+}
+
+function deleteMeal(id) {
+    if (!confirm('Gericht löschen? Es wird auch aus allen Wochenplänen entfernt.')) return;
+    meals = meals.filter(m => m.id !== id);
+    Object.values(weekPlans).forEach(plan => {
+        DAYS.forEach(d => {
+            const s = plan[d.key];
+            if (!s) return;
+            if (s.breakfast === id) s.breakfast = null;
+            if (s.lunch     === id) s.lunch     = null;
+            if (s.dinner    === id) s.dinner    = null;
+        });
+    });
+    save();
+    renderMeals();
+    renderWeekGrid();
+}
+
+// ── MODAL ──
+let rowCnt = 0, editingMealId = null;
+
+function openModal() {
+    editingMealId = null;
+    rowCnt = 0;
+    document.getElementById('modal-title').textContent = 'Neues Gericht';
+    document.getElementById('modal-sub').textContent = 'Name und Zutaten mit Menge und Einheit angeben.';
+    document.getElementById('inp-name').value = '';
+    document.getElementById('ing-container').innerHTML = '';
+    addIngRow(); addIngRow();
+    document.getElementById('modal-overlay').classList.add('open');
+    updateSuggestHint();
+    setTimeout(() => document.getElementById('inp-name').focus(), 60);
+}
+function openEditModal(id) {
+    const m = meals.find(x => x.id === id);
+    if (!m) return;
+    editingMealId = id;
+    rowCnt = 0;
+    document.getElementById('modal-title').textContent = 'Gericht bearbeiten';
+    document.getElementById('modal-sub').textContent = 'Name und Zutaten anpassen.';
+    document.getElementById('inp-name').value = m.name;
+    const cont = document.getElementById('ing-container');
+    cont.innerHTML = '';
+    if (m.ingredients.length) {
+        m.ingredients.forEach(ing => {
+            addIngRow();
+            const rows = cont.querySelectorAll('.ing-row');
+            const row  = rows[rows.length - 1];
+            row.querySelector('[data-r="name"]').value = ing.name;
+            row.querySelector('[data-r="amt"]').value  = ing.amount;
+            row.querySelector('[data-r="unit"]').value = ing.unit;
+        });
+    } else { addIngRow(); addIngRow(); }
+    document.getElementById('modal-overlay').classList.add('open');
+    updateSuggestHint();
+    setTimeout(() => document.getElementById('inp-name').focus(), 60);
+}
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    editingMealId = null;
+}
+function overlayClick(e) { if (e.target.id === 'modal-overlay') closeModal(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function addIngRow() {
+    const id  = 'ir-' + (rowCnt++);
+    const row = document.createElement('div');
+    row.className = 'ing-row';
+    row.id = id;
+    row.innerHTML = `
+        <input class="ing-inp" type="text"   placeholder="z. B. Tomaten" data-r="name">
+        <input class="ing-inp" type="number" placeholder="400" min="0.01" step="any" data-r="amt">
+        <input class="ing-inp" type="text"   placeholder="g / ml / Stk"  data-r="unit">
+        <button class="btn-del" onclick="removeIngRow('${id}')" title="Entfernen">×</button>`;
+    document.getElementById('ing-container').appendChild(row);
+}
+function removeIngRow(id) { document.getElementById(id)?.remove(); }
+
+function saveMeal() {
+    const name = document.getElementById('inp-name').value.trim();
+    if (!name) { alert('Bitte einen Namen eingeben.'); document.getElementById('inp-name').focus(); return; }
+    const ingredients = [];
+    document.querySelectorAll('#ing-container .ing-row').forEach(row => {
+        const n = row.querySelector('[data-r="name"]').value.trim();
+        const a = parseFloat(row.querySelector('[data-r="amt"]').value);
+        const u = row.querySelector('[data-r="unit"]').value.trim();
+        if (n && !isNaN(a) && a > 0 && u) ingredients.push({ name: n, amount: a, unit: u });
+    });
+    if (!ingredients.length) { alert('Bitte mindestens eine vollständige Zutat (Name, Menge, Einheit) angeben.'); return; }
+    if (editingMealId) {
+        const m = meals.find(x => x.id === editingMealId);
+        if (m) { m.name = name; m.ingredients = ingredients; }
+    } else {
+        meals.push({ id: uid(), name, ingredients });
+    }
+    save(); renderMeals(); renderWeekGrid(); closeModal();
+}
+
+// ── WEEK PLAN ──
+function buildOptions(selectedId) {
+    const groups = getCategories().slice(1).map(cat => ({
+        cat,
+        items: meals.filter(m => (m.category || 'International') === cat)
+    })).filter(g => g.items.length);
+    return '<option value="">— kein Gericht —</option>' +
+        groups.map(g =>
+            `<optgroup label="${h(g.cat)}">${g.items.map(m =>
+                `<option value="${h(m.id)}"${m.id === selectedId ? ' selected' : ''}>${h(m.name)}</option>`
+            ).join('')}</optgroup>`
+        ).join('');
+}
+
+function renderWeekLabel() {
+    const { kw, range } = formatWeekLabel(currentWeek);
+    const isCurrentWeek = currentWeek === todayWeekKey();
+    document.getElementById('week-label').innerHTML =
+        `KW ${kw}<span class="week-sub">${range}</span>`;
+    const todayBtn = document.getElementById('btn-today');
+    if (todayBtn) todayBtn.classList.toggle('is-current', isCurrentWeek);
+}
+
+// ── SLOT PICKER ──
+let slotPickerDay = null, slotPickerSlot = null, slotPickerCurrentId = null, slotPickerCat = 'Alle';
+const SLOT_LABELS = { breakfast: 'Frühstück', lunch: 'Mittag', dinner: 'Abend' };
+
+function openSlotPicker(dayKey, slotKey, currentMealId) {
+    slotPickerDay = dayKey;
+    slotPickerSlot = slotKey;
+    slotPickerCurrentId = currentMealId || null;
+    slotPickerCat = 'Alle';
+    const day = DAYS.find(d => d.key === dayKey);
+    document.getElementById('slot-picker-title').textContent =
+        `${day?.label} – ${SLOT_LABELS[slotKey] || slotKey}`;
+    document.getElementById('slot-picker-inp').value = '';
+    renderSlotPickerCats();
+    renderSlotPickerList('');
+    document.getElementById('slot-picker-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('slot-picker-inp').focus(), 120);
+}
+
+function closeSlotPicker() {
+    document.getElementById('slot-picker-overlay').classList.remove('open');
+    slotPickerDay = slotPickerSlot = slotPickerCurrentId = null;
+}
+
+function filterSlotPicker(q) { renderSlotPickerList(q.trim().toLowerCase()); }
+
+function setSlotPickerCat(cat) {
+    slotPickerCat = cat;
+    document.querySelectorAll('.slot-picker-cats .cat-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.cat === cat));
+    renderSlotPickerList(document.getElementById('slot-picker-inp').value.trim().toLowerCase());
+}
+
+function renderSlotPickerCats() {
+    const cats = ['Alle', 'Favoriten', ...getCategories().slice(2)];
+    document.getElementById('slot-picker-cats').innerHTML = cats.map(cat => {
+        const isFav = cat === 'Favoriten';
+        return `<button class="cat-btn${isFav ? ' fav-cat' : ''}${cat === slotPickerCat ? ' active' : ''}" data-cat="${h(cat)}"
+            onclick="setSlotPickerCat('${h(cat)}')">${isFav ? '★ ' : ''}${h(cat)}</button>`;
+    }).join('');
+}
+
+function renderSlotPickerList(q) {
+    const CHECK = `<svg class="sp-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`;
+
+    let base = slotPickerCat === 'Alle'
+        ? meals
+        : slotPickerCat === 'Favoriten'
+            ? meals.filter(m => favoriteMeals.has(m.id))
+            : meals.filter(m => (m.category || 'International') === slotPickerCat);
+    if (q) base = base.filter(m => m.name.toLowerCase().includes(q));
+
+    let html = `<div class="slot-picker-item sp-clear" onclick="selectSlotMeal('')">${CHECK}— kein Gericht —</div>`;
+
+    if (!base.length) {
+        html += `<div class="slot-picker-item" style="color:var(--text-4);font-style:italic;pointer-events:none">Keine Treffer</div>`;
+    } else if (q || slotPickerCat !== 'Alle') {
+        // Flat list when searching or single category selected
+        base.forEach(m => {
+            const sel = m.id === slotPickerCurrentId;
+            html += `<div class="slot-picker-item${sel ? ' selected' : ''}" onclick="selectSlotMeal('${h(m.id)}')">${CHECK}${h(m.name)}</div>`;
+        });
+    } else {
+        // Grouped by category
+        getCategories().slice(2).forEach(cat => {
+            const catMeals = base.filter(m => (m.category || 'International') === cat);
+            if (!catMeals.length) return;
+            html += `<div class="slot-picker-cat">${h(cat)}</div>`;
+            catMeals.forEach(m => {
+                const sel = m.id === slotPickerCurrentId;
+                html += `<div class="slot-picker-item${sel ? ' selected' : ''}" onclick="selectSlotMeal('${h(m.id)}')">${CHECK}${h(m.name)}</div>`;
+            });
+        });
+    }
+    document.getElementById('slot-picker-list').innerHTML = html;
+}
+
+function selectSlotMeal(mealId) {
+    const plan = currentPlan();
+    if (!plan[slotPickerDay]) plan[slotPickerDay] = { breakfast: null, lunch: null, dinner: null };
+    plan[slotPickerDay][slotPickerSlot] = mealId || null;
+    save();
+    closeSlotPicker();
+    renderWeekGrid();
+}
+
+function renderWeekGrid() {
+    renderWeekLabel();
+    const plan = currentPlan();
+    document.getElementById('week-grid').innerHTML = DAYS.map(day => {
+        const s = plan[day.key] || { breakfast: null, lunch: null, dinner: null };
+        const slot = (key, lbl, val) => {
+            const mealName = val ? (meals.find(m => m.id === val)?.name || '—') : '— kein Gericht —';
+            return `
+            <div>
+                <div class="slot-img-preview" id="slot-img-${day.key}-${key}"></div>
+                <span class="slot-lbl">${lbl}</span>
+                <button class="day-select${val ? ' has-meal' : ''}"
+                        onclick="openSlotPicker('${day.key}','${key}','${val||''}')">${h(mealName)}</button>
+            </div>`;
+        };
+        return `<div class="day-card${day.weekend ? ' weekend' : ''}">
+            <div class="day-head">${day.label}</div>
+            <div class="day-body">
+                ${slot('breakfast','Frühstück', s.breakfast)}
+                ${slot('lunch','Mittag', s.lunch)}
+                ${slot('dinner','Abend', s.dinner)}
+            </div>
+        </div>`;
+    }).join('');
+    loadWeekImages();
+}
+
+function setSlot(day, slot, sel) {
+    const plan = currentPlan();
+    if (!plan[day]) plan[day] = { breakfast: null, lunch: null, dinner: null };
+    plan[day][slot] = sel.value || null;
+    sel.classList.toggle('has-meal', !!sel.value);
+    save();
+    updateSlotImage(day, slot, sel.value || null);
+}
+
+async function updateSlotImage(dayKey, slot, mealId) {
+    const el = document.getElementById(`slot-img-${dayKey}-${slot}`);
+    if (!el) return;
+    if (!mealId) { el.classList.remove('visible'); el.style.backgroundImage = ''; return; }
+    const cached = await ImageDB.get(mealId).catch(() => null);
+    if (cached) {
+        el.style.backgroundImage = `url(${cached})`;
+        el.classList.add('visible');
+    } else {
+        el.classList.remove('visible');
+        el.style.backgroundImage = '';
+    }
+}
+
+function loadWeekImages() {
+    const plan = currentPlan();
+    DAYS.forEach(day => {
+        ['breakfast','lunch','dinner'].forEach(slot => {
+            updateSlotImage(day.key, slot, plan[day.key]?.[slot] || null);
+        });
+    });
+}
+
+// Refresh all week plan slots that show a given meal (called after image upload/delete)
+function refreshWeekSlotsForMeal(mealId) {
+    const plan = currentPlan();
+    DAYS.forEach(day => {
+        ['breakfast','lunch','dinner'].forEach(slot => {
+            if (plan[day.key]?.[slot] === mealId) updateSlotImage(day.key, slot, mealId);
+        });
+    });
+}
+
+function clearWeek() {
+    if (!confirm('Essensplan für diese Woche wirklich leeren?')) return;
+    weekPlans[currentWeek] = emptyWeek();
+    save(); renderWeekGrid();
+}
+
+function shiftWeek(delta) {
+    currentWeek = shiftWeekKey(currentWeek, delta);
+    save(); renderWeekGrid();
+}
+
+function goToToday() {
+    currentWeek = todayWeekKey();
+    save(); renderWeekGrid();
+}
+
+// ── SHOPPING LIST ──
+function buildShoppingItems() {
+    const agg = {};
+    const plan = currentPlan();
+    DAYS.forEach(day => {
+        ['breakfast','lunch','dinner'].forEach(slot => {
+            const mid  = plan[day.key]?.[slot];
+            if (!mid) return;
+            const meal = meals.find(m => m.id === mid);
+            if (!meal) return;
+            meal.ingredients.forEach(ing => {
+                const key = ing.name.trim().toLowerCase() + '|||' + ing.unit.trim().toLowerCase();
+                if (agg[key]) { agg[key].amount += ing.amount; }
+                else { agg[key] = { key, name: ing.name, unit: ing.unit, amount: ing.amount }; }
+            });
+        });
+    });
+    return Object.values(agg).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+function allShoppingItems() {
+    const meal = buildShoppingItems().map(it =>
+        amountOverrides[it.key] !== undefined ? { ...it, amount: amountOverrides[it.key] } : it
+    );
+    const cust = customShopItems.map(ci => ({ ...ci, key: 'custom-' + ci.id, isCustom: true }));
+    return [...meal, ...cust].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+function renderShoppingList() {
+    const wrap  = document.getElementById('shop-container');
+    const items = allShoppingItems();
+
+    if (!items.length) {
+        wrap.innerHTML = `<div class="empty">
+            <svg class="empty-svg" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 8h22l-4 18H14L10 8z"/>
+                <circle cx="16" cy="34" r="2"/>
+                <circle cx="28" cy="34" r="2"/>
+                <line x1="6" y1="8" x2="10" y2="8"/>
+            </svg>
+            <strong>Einkaufsliste ist leer</strong>
+            <p>Weise im Essensplan Gerichte zu oder füge unten eigene Artikel hinzu.</p>
+        </div>`;
+        return;
+    }
+
+    const total = items.length;
+    const done  = items.filter(it => checkedItems[it.key]).length;
+    wrap.innerHTML = `
+        <div class="shop-stats">
+            <span class="stat-tag">${total - done} offen</span>
+            <span>${done} von ${total} Artikeln erledigt</span>
+        </div>
+        <div class="shop-list">
+            ${items.map(it => {
+                const ck = checkedItems[it.key] || false;
+                const amtStr = it.amount ? `${fmtAmt(it.amount)} ${h(it.unit)}` : (it.unit ? h(it.unit) : '');
+                return `<div class="shop-item${ck ? ' done' : ''}">
+                    <input type="checkbox" ${ck ? 'checked' : ''} data-key="${h(it.key)}" onchange="toggleItem(this)">
+                    <span class="si-amt" onclick="editItemAmount(this,'${h(it.key)}',${it.amount||0},'${h(it.unit)}')" title="Menge anpassen">${amtStr || '–'}</span>
+                    <span class="si-name">${h(it.name)}</span>
+                    ${it.isCustom ? `<button class="btn-del" onclick="deleteCustomItem('${h(it.id)}')" title="Entfernen">×</button>` : ''}
+                </div>`;
+            }).join('')}
+        </div>`;
+}
+
+function editItemAmount(el, key, currentAmt, unit) {
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.value = currentAmt || '';
+    inp.min = '0';
+    inp.step = 'any';
+    inp.className = 'si-amt-input';
+    el.replaceWith(inp);
+    inp.focus();
+    inp.select();
+    inp.addEventListener('blur', () => commitAmt(inp, key, unit));
+    inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+        if (e.key === 'Escape') renderShoppingList();
+    });
+}
+
+function commitAmt(inp, key, unit) {
+    const val = parseFloat(inp.value);
+    const newAmt = isNaN(val) || val < 0 ? 0 : val;
+    if (key.startsWith('custom-')) {
+        const id = key.slice(7);
+        const ci = customShopItems.find(c => c.id === id);
+        if (ci) ci.amount = newAmt;
+    } else {
+        if (newAmt === 0) delete amountOverrides[key];
+        else amountOverrides[key] = newAmt;
+    }
+    save();
+    renderShoppingList();
+}
+
+function addCustomItem() {
+    const name = document.getElementById('ci-name')?.value.trim();
+    if (!name) { document.getElementById('ci-name')?.focus(); return; }
+    const amount = parseFloat(document.getElementById('ci-amt')?.value) || 0;
+    const unit   = document.getElementById('ci-unit')?.value.trim() || '';
+    customShopItems.push({ id: uid(), name, amount, unit });
+    save();
+    renderShoppingList();
+    // restore focus after re-render
+    document.getElementById('ci-name')?.focus();
+}
+
+function deleteCustomItem(id) {
+    customShopItems = customShopItems.filter(ci => ci.id !== id);
+    delete checkedItems['custom-' + id];
+    save();
+    renderShoppingList();
+}
+
+function toggleItem(cb) {
+    const key = cb.dataset.key;
+    checkedItems[key] = cb.checked;
+    save();
+    cb.closest('.shop-item').classList.toggle('done', cb.checked);
+    const items = allShoppingItems();
+    const total = items.length;
+    const done  = items.filter(it => checkedItems[it.key]).length;
+    const stats = document.querySelector('.shop-stats');
+    if (stats) {
+        stats.querySelector('.stat-tag').textContent = (total - done) + ' offen';
+        stats.querySelector('span:last-child').textContent = `${done} von ${total} Artikeln erledigt`;
+    }
+}
+
+function resetChecked() {
+    checkedItems = {}; save(); renderShoppingList();
+}
+
+// ── IMAGE DB (IndexedDB wrapper) ──
+const ImageDB = (() => {
+    const DB = 'wp-images', STORE = 'imgs';
+    let db = null;
+    const open = () => new Promise((res, rej) => {
+        if (db) return res(db);
+        const req = indexedDB.open(DB, 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
+        req.onsuccess = e => { db = e.target.result; res(db); };
+        req.onerror   = e => rej(e.target.error);
+    });
+    const tx = async (mode, fn) => { const d = await open(); return new Promise((res, rej) => { const t = d.transaction(STORE, mode); const r = fn(t.objectStore(STORE)); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); };
+    return {
+        get:    key       => tx('readonly',  s => s.get(key)),
+        set:    (key, val)=> tx('readwrite', s => s.put(val, key)),
+        delete: key       => tx('readwrite', s => s.delete(key)),
+    };
+})();
+
+// ── IMAGE MODAL ──
+let activeImgMealId = null;
+
+async function loadThumbnails() {
+    for (const meal of meals) {
+        const val = await ImageDB.get(meal.id).catch(() => null);
+        if (val) applyThumb(meal.id, val);
+    }
+}
+
+function showImg(id) {
+    const meal = meals.find(m => m.id === id);
+    if (!meal) return;
+    activeImgMealId = id;
+    document.getElementById('img-title').textContent = meal.name;
+    document.getElementById('img-overlay').classList.add('open');
+    renderImgBody(meal);
+}
+
+function closeImg() {
+    document.getElementById('img-overlay').classList.remove('open');
+    activeImgMealId = null;
+}
+
+async function renderImgBody(meal) {
+    const body = document.getElementById('img-body');
+    const cached = await ImageDB.get(meal.id).catch(() => null);
+    if (cached) {
+        body.innerHTML = `<img class="img-viewer" src="${cached}" alt="${h(meal.name)}">`;
+        return;
+    }
+    body.innerHTML = `
+        <div class="img-status" style="flex-direction:column;gap:14px;padding:32px 24px">
+            <div style="font-weight:500;color:var(--text-2)">Noch kein Bild vorhanden</div>
+            <button class="btn btn-primary btn-sm" onclick="triggerUpload()">Bild vom Computer hochladen</button>
+            <div style="font-size:.78rem;color:var(--text-3)">oder Bild-URL einfügen</div>
+            <div style="display:flex;gap:6px;width:100%;max-width:320px">
+                <input class="form-input" id="img-url-input" type="url" placeholder="https://…"
+                       style="flex:1;font-size:.82rem;padding:7px 10px"
+                       onkeydown="if(event.key==='Enter')loadFromUrl()">
+                <button class="btn btn-outline btn-sm" onclick="loadFromUrl()">Laden</button>
+            </div>
+        </div>`;
+}
+
+async function loadFromUrl() {
+    const input = document.getElementById('img-url-input');
+    const url = input?.value?.trim();
+    if (!url || !activeImgMealId) return;
+    const id = activeImgMealId;
+    const body = document.getElementById('img-body');
+    if (body) body.innerHTML = `<div class="img-status"><span class="spin"></span>Bild wird geladen…</div>`;
+
+    const img = new Image();
+    img.onload = async () => {
+        await ImageDB.set(id, url).catch(() => {});
+        applyThumb(id, url);
+        refreshWeekSlotsForMeal(id);
+        if (activeImgMealId === id && body) {
+            body.innerHTML = `<img class="img-viewer" src="${url}" alt="">`;
+        }
+    };
+    img.onerror = () => {
+        if (activeImgMealId === id && body) {
+            const meal = meals.find(m => m.id === id);
+            body.innerHTML = `
+                <div class="img-status" style="flex-direction:column;gap:14px;padding:32px 24px">
+                    <div style="color:var(--red);font-weight:500">URL konnte nicht geladen werden</div>
+                    <div style="font-size:.78rem;color:var(--text-3)">Bitte eine direkte Bild-URL eingeben (endet auf .jpg, .png, …)</div>
+                    <button class="btn btn-outline btn-sm" onclick="renderImgBody(meals.find(m=>m.id===activeImgMealId))">Zurück</button>
+                </div>`;
+        }
+    };
+    img.src = url;
+}
+
+function triggerUpload() {
+    document.getElementById('img-upload-input').click();
+}
+
+// Attached via addEventListener after DOM ready (see INIT section)
+function handleImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file || !activeImgMealId) return;
+    const id = activeImgMealId;
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+        const dataUrl = ev.target.result;
+        await ImageDB.set(id, dataUrl).catch(() => {});
+        const body = document.getElementById('img-body');
+        if (activeImgMealId === id && body) {
+            body.innerHTML = `<img class="img-viewer" src="${dataUrl}" alt="">`;
+        }
+        applyThumb(id, dataUrl);
+        refreshWeekSlotsForMeal(id);
+        e.target.value = ''; // reset so same file can be re-selected
+    };
+    reader.readAsDataURL(file);
+}
+
+function applyThumb(mealId, src) {
+    const thumb = document.getElementById('thumb-' + mealId);
+    if (thumb) { thumb.style.backgroundImage = `url(${src})`; thumb.classList.add('loaded'); }
+}
+
+async function deleteImage() {
+    if (!activeImgMealId) return;
+    const id = activeImgMealId;
+    await ImageDB.delete(id).catch(() => {});
+    const thumb = document.getElementById('thumb-' + id);
+    if (thumb) { thumb.style.backgroundImage = ''; thumb.classList.remove('loaded'); }
+    DAYS.forEach(day => ['breakfast','lunch','dinner'].forEach(slot => {
+        if (currentPlan()[day.key]?.[slot] === id) updateSlotImage(day.key, slot, null);
+    }));
+    closeImg();
+}
+
+// ── RECIPE ──
+let activeRecipeMealId = null;
+
+function showRecipe(id) {
+    const meal = meals.find(m => m.id === id);
+    if (!meal) return;
+    activeRecipeMealId = id;
+
+    document.getElementById('recipe-title').textContent = meal.name;
+    document.getElementById('recipe-overlay').classList.add('open');
+    renderRecipeBody(meal);
+}
+
+function closeRecipe() {
+    document.getElementById('recipe-overlay').classList.remove('open');
+    activeRecipeMealId = null;
+}
+
+function regenRecipe() {
+    if (!activeRecipeMealId) return;
+    delete recipeCache[activeRecipeMealId];
+    save();
+    const meal = meals.find(m => m.id === activeRecipeMealId);
+    if (meal) renderRecipeBody(meal);
+}
+
+function renderRecipeBody(meal) {
+    const body = document.getElementById('recipe-body');
+    const cached = recipeCache[meal.id];
+
+    const ingHtml = `
+        <div class="recipe-section">
+            <div class="recipe-section-title">Zutaten</div>
+            <ul class="recipe-ing-list">
+                ${meal.ingredients.map(i =>
+                    `<li><span class="recipe-ing-amt">${fmtAmt(i.amount)} ${h(i.unit)}</span><span>${h(i.name)}</span></li>`
+                ).join('')}
+            </ul>
+        </div>`;
+
+    if (cached) {
+        body.innerHTML = ingHtml + `
+            <div class="recipe-section">
+                <div class="recipe-section-title">Zubereitung</div>
+                <ol class="recipe-steps">
+                    ${cached.map(step => `<li>${h(step)}</li>`).join('')}
+                </ol>
+            </div>`;
+        return;
+    }
+
+    body.innerHTML = ingHtml + `
+        <div class="recipe-section">
+            <div class="recipe-section-title">Zubereitung</div>
+            <div class="recipe-placeholder"><span class="spin"></span> Rezept wird geladen…</div>
+        </div>`;
+
+    if (!hasKey()) {
+        body.querySelector('.recipe-placeholder').innerHTML =
+            'Kein API-Key gespeichert. <button class="no-key-hint" onclick="closeRecipe();openKeyPanel()">Jetzt einrichten</button>';
+        return;
+    }
+
+    fetchRecipeSteps(meal);
+}
+
+async function fetchRecipeSteps(meal) {
+    const prompt =
+        `Schreibe die Zubereitungsschritte für das Rezept "${meal.name}". ` +
+        `Antworte ausschließlich mit nummerierten Schritten auf Deutsch, ohne Zutaten und ohne Einleitung. ` +
+        `Format: "1. Schritt\n2. Schritt\n..." – maximal 8 Schritte, kompakt und praxisnah.`;
+
+    try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getKey(),
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                max_tokens: 600,
+                messages: [{ role: 'user', content: prompt }],
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            if (res.status === 401 || res.status === 403) { localStorage.removeItem(LS_KEY); updateKeyIndicator(); }
+            throw new Error(err.error?.message || `Fehler ${res.status}`);
+        }
+
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || '';
+
+        // Parse numbered steps
+        const steps = text.split('\n')
+            .map(l => l.replace(/^\d+[\.\)]\s*/, '').trim())
+            .filter(l => l.length > 0);
+
+        if (!steps.length) throw new Error('Keine Schritte im Response.');
+
+        // Cache and render
+        if (activeRecipeMealId === meal.id) {
+            recipeCache[meal.id] = steps;
+            save();
+            renderRecipeBody(meal);
+        }
+    } catch (err) {
+        const placeholder = document.querySelector('.recipe-placeholder');
+        if (placeholder) placeholder.textContent = 'Fehler: ' + err.message;
+    }
+}
+
+// ── SHARE SHOPPING LIST ──
+function getShoppingListText() {
+    const items = allShoppingItems();
+    if (!items.length) return '';
+    const { kw, range } = formatWeekLabel(currentWeek);
+    const lines = items.map(it => {
+        const amtStr = it.amount ? `${fmtAmt(it.amount)} ${it.unit}` : (it.unit || '');
+        const parts  = [amtStr, it.name].filter(Boolean);
+        return `${checkedItems[it.key] ? '☑' : '☐'} ${parts.join('  ')}`;
+    });
+    return `🛒 Einkaufsliste – KW ${kw}\n${range}\n${'─'.repeat(28)}\n${lines.join('\n')}`;
+}
+
+function openSharePanel() {
+    const items = allShoppingItems();
+    if (!items.length) { alert('Die Einkaufsliste ist leer.'); return; }
+
+    const total = items.length;
+    const open  = items.filter(it => !checkedItems[it.key]).length;
+    const { kw } = formatWeekLabel(currentWeek);
+    document.getElementById('share-summary').textContent =
+        `KW ${kw} · ${open} von ${total} Zutaten noch benötigt`;
+
+    const hasNative = !!navigator.share;
+
+    const tgConfigured = hasTgConfig();
+    document.getElementById('share-options').innerHTML = `
+        <button class="share-btn" onclick="shareViaTelegram()" ${!tgConfigured ? 'style="opacity:.55"' : ''}>
+            <span class="share-icon icon-telegram">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#229ED9"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.775l-2.968-.924c-.645-.204-.657-.645.136-.953l11.57-4.461c.537-.194 1.006.131.836.784h.13z"/></svg>
+            </span>
+            <span class="share-label">
+                Telegram
+                <span class="share-sub">${tgConfigured ? 'Direkt an deinen Bot senden' : 'Bot noch nicht eingerichtet — jetzt einrichten'}</span>
+            </span>
+        </button>
+        <button class="share-btn" onclick="shareViaWhatsApp()">
+            <span class="share-icon icon-whatsapp">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.859L.057 23.5l5.784-1.517A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.369l-.359-.214-3.432.9.916-3.348-.234-.373A9.818 9.818 0 1112 21.818z"/></svg>
+            </span>
+            <span class="share-label">WhatsApp<span class="share-sub">Liste in Chat senden</span></span>
+        </button>
+        <button class="share-btn" onclick="shareViaEmail()">
+            <span class="share-icon icon-email">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f6ef7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
+            </span>
+            <span class="share-label">E-Mail<span class="share-sub">Als E-Mail verschicken</span></span>
+        </button>
+        <button class="share-btn" onclick="copyListToClipboard()">
+            <span class="share-icon icon-copy">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </span>
+            <span class="share-label">In Zwischenablage kopieren<span class="share-sub">Dann in beliebige App einfügen</span></span>
+        </button>
+        ${hasNative ? `
+        <button class="share-btn" onclick="shareViaNative()">
+            <span class="share-icon" style="background:var(--border-lt)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </span>
+            <span class="share-label">Weitere Apps (Systemdialog)<span class="share-sub">Alle installierten Apps anzeigen</span></span>
+        </button>` : ''}`;
+
+    document.getElementById('share-overlay').classList.add('open');
+}
+
+function closeSharePanel() {
+    document.getElementById('share-overlay').classList.remove('open');
+}
+
+async function shareViaNative() {
+    const text = getShoppingListText();
+    const { kw } = formatWeekLabel(currentWeek);
+    try { await navigator.share({ title: `Einkaufsliste KW ${kw}`, text }); } catch (_) {}
+}
+
+function shareViaWhatsApp() {
+    const text = getShoppingListText();
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+function shareViaEmail() {
+    const text  = getShoppingListText();
+    const { kw } = formatWeekLabel(currentWeek);
+    const subj  = encodeURIComponent(`Einkaufsliste KW ${kw}`);
+    window.location.href = `mailto:?subject=${subj}&body=${encodeURIComponent(text)}`;
+}
+
+async function copyListToClipboard() {
+    const text = getShoppingListText();
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    const el = document.getElementById('copy-success');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── TELEGRAM BOT ──
+const LS_TG_TOKEN  = 'wp_tg_token';
+const LS_TG_CHATID = 'wp_tg_chatid';
+
+function getTgToken()  { return localStorage.getItem(LS_TG_TOKEN)  || ''; }
+function getTgChatId() { return localStorage.getItem(LS_TG_CHATID) || ''; }
+function hasTgConfig() { return !!(getTgToken() && getTgChatId()); }
+
+function openTgPanel() {
+    closeSharePanel();
+    document.getElementById('inp-tg-token').value  = getTgToken();
+    document.getElementById('inp-tg-chatid').value = getTgChatId();
+    document.getElementById('tg-fetch-status').innerHTML = '';
+    document.getElementById('tg-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('inp-tg-token').focus(), 60);
+}
+function closeTgPanel() {
+    document.getElementById('tg-overlay').classList.remove('open');
+}
+function saveTgConfig() {
+    const token  = document.getElementById('inp-tg-token').value.trim();
+    const chatId = document.getElementById('inp-tg-chatid').value.trim();
+    if (!token)  { alert('Bitte den Bot-Token eingeben.'); return; }
+    if (!chatId) { alert('Bitte die Chat-ID eingeben oder automatisch ermitteln.'); return; }
+    localStorage.setItem(LS_TG_TOKEN,  token);
+    localStorage.setItem(LS_TG_CHATID, chatId);
+    closeTgPanel();
+}
+function deleteTgConfig() {
+    localStorage.removeItem(LS_TG_TOKEN);
+    localStorage.removeItem(LS_TG_CHATID);
+    document.getElementById('inp-tg-token').value  = '';
+    document.getElementById('inp-tg-chatid').value = '';
+    document.getElementById('tg-fetch-status').innerHTML = '';
+    closeTgPanel();
+}
+
+async function fetchTgChatId() {
+    const token = document.getElementById('inp-tg-token').value.trim();
+    const statusEl = document.getElementById('tg-fetch-status');
+    const btn = document.getElementById('btn-tg-fetch');
+    if (!token) { alert('Bitte zuerst den Bot-Token eingeben.'); return; }
+
+    statusEl.className = 'tg-status spin';
+    statusEl.innerHTML = '<span class="spin"></span> Suche nach Nachrichten…';
+    btn.disabled = true;
+
+    try {
+        const res  = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.description || 'Ungültiger Token');
+
+        if (!data.result.length) {
+            throw new Error('Keine Nachrichten gefunden — bitte sende zuerst eine Nachricht an deinen Bot in Telegram, dann erneut versuchen.');
+        }
+
+        // Find latest message or callback
+        let chatId = null;
+        for (let i = data.result.length - 1; i >= 0; i--) {
+            const u = data.result[i];
+            chatId = u.message?.chat?.id ?? u.channel_post?.chat?.id ?? u.my_chat_member?.chat?.id;
+            if (chatId) break;
+        }
+        if (!chatId) throw new Error('Chat-ID konnte nicht ausgelesen werden. Bitte sende eine Textnachricht an den Bot.');
+
+        document.getElementById('inp-tg-chatid').value = String(chatId);
+        statusEl.className = 'tg-status ok';
+        statusEl.textContent = `Chat-ID gefunden: ${chatId}`;
+    } catch (err) {
+        statusEl.className = 'tg-status err';
+        statusEl.textContent = err.message;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function shareViaTelegram() {
+    if (!hasTgConfig()) {
+        openTgPanel();
+        return;
+    }
+
+    const items = buildShoppingItems();
+    if (!items.length) { alert('Die Einkaufsliste ist leer.'); return; }
+
+    const { kw, range } = formatWeekLabel(currentWeek);
+    const open  = items.filter(it => !checkedItems[it.key]).length;
+
+    // Build nicely formatted Telegram message (HTML)
+    let msg = `<b>Einkaufsliste – KW ${kw}</b>\n<i>${range}</i>\n`;
+    msg += `<i>${open} von ${items.length} Zutaten noch benötigt</i>\n\n`;
+    items.forEach(it => {
+        const done = checkedItems[it.key];
+        const line = `${fmtAmt(it.amount)} ${it.unit}  ${it.name}`;
+        msg += done ? `<s>${line}</s>\n` : `${line}\n`;
+    });
+
+    closeSharePanel();
+
+    try {
+        const res = await fetch(
+            `https://api.telegram.org/bot${getTgToken()}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id:    getTgChatId(),
+                text:       msg,
+                parse_mode: 'HTML',
+            })
+        });
+        const data = await res.json();
+        if (!data.ok) {
+            // Token or chat_id might be invalid
+            if (data.error_code === 401) {
+                localStorage.removeItem(LS_TG_TOKEN);
+                localStorage.removeItem(LS_TG_CHATID);
+            }
+            throw new Error(data.description || `Fehler ${data.error_code}`);
+        }
+        // Show brief success feedback
+        const btn = document.querySelector('[onclick="shareViaTelegram()"]');
+        if (btn) {
+            const orig = btn.querySelector('.share-sub')?.textContent;
+            const sub = btn.querySelector('.share-sub');
+            if (sub) { sub.textContent = 'Gesendet!'; setTimeout(() => { if (sub) sub.textContent = orig; }, 2500); }
+        }
+        // Reopen panel to show confirmation
+        alert('Einkaufsliste wurde an Telegram gesendet.');
+    } catch (err) {
+        alert('Telegram-Fehler: ' + err.message + '\n\nBitte überprüfe die Einstellungen.');
+        openTgPanel();
+    }
+}
+
+// ── CATEGORY GENERATION ──
+function openCatGenModal() {
+    if (!hasKey()) { openKeyPanel(); return; }
+    document.getElementById('inp-catname').value = '';
+    document.getElementById('catgen-status').innerHTML = '';
+    const go = document.getElementById('btn-catgen-go');
+    go.disabled = false; go.textContent = 'Generieren'; go.onclick = generateCategory;
+    document.getElementById('btn-catgen-cancel').disabled = false;
+    document.getElementById('catgen-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('inp-catname').focus(), 60);
+}
+
+function closeCatGenModal() {
+    document.getElementById('catgen-overlay').classList.remove('open');
+}
+
+async function generateCategory() {
+    const catName = document.getElementById('inp-catname').value.trim();
+    if (!catName) { document.getElementById('inp-catname').focus(); return; }
+
+    const go     = document.getElementById('btn-catgen-go');
+    const cancel = document.getElementById('btn-catgen-cancel');
+    const status = document.getElementById('catgen-status');
+
+    go.disabled = true;
+    go.innerHTML = '<span class="spin"></span> Wird generiert…';
+    cancel.disabled = true;
+    status.innerHTML = `<div class="catgen-progress"><span class="spin"></span> KI erstellt 20 ${h(catName)}-Gerichte mit Zutaten …</div>`;
+
+    const prompt =
+        `Erstelle genau 20 typische ${catName}-Gerichte als JSON-Array. ` +
+        `Jedes Element hat genau zwei Felder: ` +
+        `"name" (string, Gerichtsname auf Deutsch) und ` +
+        `"ingredients" (Array von Objekten mit "name" string, "amount" number, "unit" string). ` +
+        `Sinnvolle Einheiten: g, ml, Stk, EL, TL, Zehen, Bund, Prise. ` +
+        `Jedes Gericht soll 5–10 Zutaten haben und typisch für "${catName}" sein. ` +
+        `Antworte NUR mit dem JSON-Array, ohne Erklärung oder Markdown.`;
+
+    try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getKey() },
+            body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            if (res.status === 401 || res.status === 403) { localStorage.removeItem(LS_KEY); updateKeyIndicator(); }
+            throw new Error(err.error?.message || `Fehler ${res.status}`);
+        }
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        const match = text.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error('Kein JSON im API-Response gefunden.');
+
+        const generated = JSON.parse(match[0]);
+        if (!Array.isArray(generated) || !generated.length) throw new Error('Leere Gerichteliste erhalten.');
+
+        let added = 0;
+        generated.forEach(m => {
+            if (!m.name || !Array.isArray(m.ingredients)) return;
+            const ingredients = m.ingredients.filter(i => i.name && i.unit && Number(i.amount) > 0);
+            if (!ingredients.length) return;
+            meals.push({ id: uid(), name: String(m.name), category: catName, ingredients });
+            added++;
+        });
+        if (!added) throw new Error('Die generierten Gerichte hatten kein gültiges Format.');
+
+        save();
+        renderMeals();
+        renderWeekGrid();
+        filterCategory(catName);
+
+        status.innerHTML = `<div class="catgen-success">${added} Gerichte für „${h(catName)}" wurden erfolgreich erstellt.</div>`;
+        go.disabled = false; go.textContent = 'Schließen'; go.onclick = closeCatGenModal;
+        cancel.disabled = false;
+    } catch (err) {
+        status.innerHTML = `<div class="catgen-error">Fehler: ${h(err.message)}</div>`;
+        go.disabled = false; go.textContent = 'Nochmal versuchen'; go.onclick = generateCategory;
+        cancel.disabled = false;
+    }
+}
+
+// ── API KEY ──
+const LS_KEY = 'wp_api_key';
+
+function getKey()  { return localStorage.getItem(LS_KEY) || ''; }
+function hasKey()  { return !!getKey(); }
+
+function updateKeyIndicator() {
+    const dot = document.getElementById('key-dot');
+    if (dot) dot.classList.toggle('active', hasKey());
+}
+
+function openKeyPanel() {
+    document.getElementById('inp-apikey').value = getKey();
+    document.getElementById('key-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('inp-apikey').focus(), 60);
+}
+function closeKeyPanel() {
+    document.getElementById('key-overlay').classList.remove('open');
+}
+function saveKey() {
+    const val = document.getElementById('inp-apikey').value.trim();
+    if (val) localStorage.setItem(LS_KEY, val);
+    else localStorage.removeItem(LS_KEY);
+    updateKeyIndicator();
+    updateSuggestHint();
+    closeKeyPanel();
+}
+function deleteKey() {
+    localStorage.removeItem(LS_KEY);
+    document.getElementById('inp-apikey').value = '';
+    updateKeyIndicator();
+    updateSuggestHint();
+    closeKeyPanel();
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeModal(); closeKeyPanel(); closeTgPanel(); closeSharePanel(); closeMealsPanel(); closeShoppingPanel(); closeCatGenModal(); closeSlotPicker(); closeApptForm(); }
+});
+
+function updateSuggestHint() {
+    const hint = document.getElementById('suggest-hint');
+    if (!hint) return;
+    if (hasKey()) {
+        hint.innerHTML = '';
+    } else {
+        hint.innerHTML = `<div class="no-key-hint">Kein API-Key gespeichert —
+            <button class="no-key-hint" onclick="openKeyPanel()">jetzt einrichten</button>
+            um Zutaten automatisch zu laden.</div>`;
+    }
+}
+
+// ── SUGGEST INGREDIENTS ──
+async function suggestIngredients() {
+    const name = document.getElementById('inp-name').value.trim();
+    if (!name) {
+        document.getElementById('inp-name').focus();
+        return;
+    }
+    if (!hasKey()) { openKeyPanel(); return; }
+
+    const btn = document.getElementById('btn-suggest');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Laden…';
+
+    try {
+        const prompt =
+            `Gib mir die typischen Zutaten für das Gericht "${name}" als JSON-Array. ` +
+            `Jedes Element hat genau drei Felder: name (string), amount (number), unit (string). ` +
+            `Sinnvolle Einheiten: g, ml, Stk, EL, TL, Zehen, Bund, Prise. ` +
+            `Antworte NUR mit dem JSON-Array, ohne Erklärung oder Markdown-Formatierung. ` +
+            `Beispiel: [{"name":"Zwiebeln","amount":2,"unit":"Stk"},{"name":"Olivenöl","amount":2,"unit":"EL"}]`;
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getKey(),
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                max_tokens: 800,
+                messages: [{ role: 'user', content: prompt }],
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            if (res.status === 401 || res.status === 403) {
+                localStorage.removeItem(LS_KEY);
+                updateKeyIndicator();
+                throw new Error('Ungültiger API-Key. Bitte neu eingeben.');
+            }
+            throw new Error(err.error?.message || `Fehler ${res.status}`);
+        }
+
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        const match = text.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error('Keine Zutaten im API-Response gefunden.');
+
+        const ingredients = JSON.parse(match[0]);
+        if (!Array.isArray(ingredients) || !ingredients.length) throw new Error('Leere Zutatenliste erhalten.');
+
+        // Populate ingredient rows
+        document.getElementById('ing-container').innerHTML = '';
+        rowCnt = 0;
+        ingredients.forEach(ing => {
+            addIngRow();
+            const rows = document.querySelectorAll('#ing-container .ing-row');
+            const row  = rows[rows.length - 1];
+            row.querySelector('[data-r="name"]').value = String(ing.name  ?? '');
+            row.querySelector('[data-r="amt"]').value  = Number(ing.amount ?? 0) || '';
+            row.querySelector('[data-r="unit"]').value = String(ing.unit  ?? '');
+        });
+
+    } catch (err) {
+        alert('Fehler beim Laden der Zutaten:\n' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Zutaten laden';
+    }
+}
+
+// ── SEASONAL THEME ──
+function applySeasonTheme() {
+    const m = new Date().getMonth(); // 0 = Jan
+    let season;
+    if (m >= 2 && m <= 4)      season = 'spring';  // März–Mai
+    else if (m >= 5 && m <= 7) season = 'summer';  // Juni–Aug
+    else if (m >= 8 && m <= 10) season = 'autumn'; // Sep–Nov
+    else                        season = 'winter';  // Dez–Feb
+    document.body.dataset.season = season;
+}
+
+// ── TERMINPLAN ──
+const SP_PERSONS = ['Jonas', 'Mika', 'Emil'];
+const SP_PERIODS = [
+    { n:1, time:'07:45' }, { n:2, time:'08:30' },
+    { n:3, time:'09:35' }, { n:4, time:'10:20' },
+    { n:5, time:'11:25' }, { n:6, time:'12:10' },
+    { n:7, time:'13:40' }, { n:8, time:'14:25' },
+];
+const SP_DAYS = ['mon','tue','wed','thu','fri'];
+const SP_DAY_LABELS = { mon:'Mo', tue:'Di', wed:'Mi', thu:'Do', fri:'Fr' };
+
+let stundenplanData = {}, stundenplanPerson = 'Jonas';
+
+function loadStundenplan() {
+    try { stundenplanData = JSON.parse(localStorage.getItem('wp_stundenplan_v1')) || {}; } catch(e) { stundenplanData = {}; }
+}
+function saveStundenplan() {
+    localStorage.setItem('wp_stundenplan_v1', JSON.stringify(stundenplanData));
+}
+
+function renderStundenplanTab() {
+    const p = SCHED_PERSONS.find(x => x.name === stundenplanPerson);
+    // Person selector
+    document.getElementById('sp-person-sel').innerHTML = SP_PERSONS.map(name => {
+        const sp = SCHED_PERSONS.find(x => x.name === name);
+        const active = name === stundenplanPerson;
+        return '<button class="sp-person-btn" style="border-color:' + sp.color
+            + ';color:' + (active ? '#fff' : sp.color)
+            + ';background:' + (active ? sp.color : 'transparent') + '"'
+            + ' onclick="selectSpPerson(\'' + name + '\')">' + h(name) + '</button>';
+    }).join('');
+    // Grid
+    const personData = stundenplanData[stundenplanPerson] || {};
+    const color = p ? p.color : '#888';
+    const bg    = p ? p.bg    : '#f5f5f5';
+    let html = '<div class="sp-grid-wrap"><table class="sp-grid"><thead><tr>'
+        + '<th class="sp-th-empty"></th>';
+    SP_DAYS.forEach(dk => {
+        html += '<th class="sp-th-day">' + SP_DAY_LABELS[dk] + '</th>';
+    });
+    html += '</tr></thead><tbody>';
+    SP_PERIODS.forEach((per, pi) => {
+        html += '<tr><td class="sp-period-col"><strong>' + per.n + '.</strong>' + per.time + '</td>';
+        SP_DAYS.forEach(dk => {
+            const val = (personData[dk] || [])[pi] || '';
+            const hasVal = val.length > 0;
+            html += '<td class="sp-cell' + (hasVal ? ' has-val' : '') + '"'
+                + (hasVal ? ' style="--sp-color:' + color + ';--sp-bg:' + bg + '"' : '')
+                + ' onclick="startEditSpCell(\'' + dk + '\',' + pi + ')">'
+                + '<span class="sp-cell-text" id="sp-t-' + dk + '-' + pi + '">' + h(val) + '</span>'
+                + '</td>';
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('sp-grid-outer').innerHTML = html;
+}
+
+function selectSpPerson(name) {
+    stundenplanPerson = name;
+    renderStundenplanTab();
+}
+
+function startEditSpCell(dayKey, pi) {
+    const textEl = document.getElementById('sp-t-' + dayKey + '-' + pi);
+    if (!textEl || textEl.style.display === 'none') return;
+    const td = textEl.parentElement;
+    const currentVal = ((stundenplanData[stundenplanPerson] || {})[dayKey] || [])[pi] || '';
+    const p = SCHED_PERSONS.find(x => x.name === stundenplanPerson);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentVal;
+    input.placeholder = 'Fach…';
+    if (p) input.style.color = p.color;
+    textEl.style.display = 'none';
+    td.appendChild(input);
+    input.focus(); input.select();
+    const save = () => {
+        const val = input.value.trim();
+        if (!stundenplanData[stundenplanPerson]) stundenplanData[stundenplanPerson] = {};
+        if (!stundenplanData[stundenplanPerson][dayKey]) stundenplanData[stundenplanPerson][dayKey] = [];
+        stundenplanData[stundenplanPerson][dayKey][pi] = val;
+        saveStundenplan();
+        // update cell in place
+        textEl.textContent = val;
+        textEl.style.display = '';
+        input.remove();
+        if (p) {
+            td.classList.toggle('has-val', val.length > 0);
+            td.style.setProperty('--sp-color', val ? p.color : '');
+            td.style.setProperty('--sp-bg',    val ? p.bg    : '');
+        }
+    };
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') input.blur();
+        if (e.key === 'Escape') { input.value = currentVal; input.blur(); }
+    });
+}
+
+const SCHED_PERSONS = [
+    { name: 'Hans',    color: '#4a7cf8', bg: '#eef2fe' },
+    { name: 'Eugenia', color: '#e8748a', bg: '#fce4ec' },
+    { name: 'Jonas',   color: '#30b057', bg: '#edfaf2' },
+    { name: 'Mika',    color: '#ff9500', bg: '#fff3e0' },
+    { name: 'Emil',    color: '#af52de', bg: '#f5eeff' },
+];
+const SCHED_SLOTS = [];
+for (let sh = 6; sh < 22; sh++) {
+    SCHED_SLOTS.push(`${String(sh).padStart(2,'0')}:00`);
+    SCHED_SLOTS.push(`${String(sh).padStart(2,'0')}:30`);
+}
+SCHED_SLOTS.push('22:00'); // end-of-day anchor
+const ROW_H = 44; // px per 30-min slot
+const GRID_H = (SCHED_SLOTS.length - 1) * ROW_H;
+
+function slotIdx(time) {
+    const [hh, mm] = time.split(':').map(Number);
+    return (hh - 6) * 2 + (mm >= 30 ? 1 : 0);
+}
+
+let scheduleData = {}, schedWeek = '', schedDay = 'mon';
+let schedExpandedDay = null;
+let apptFormPrefill = null, apptFormEditId = null;
+
+function loadSchedState() {
+    const p = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+    scheduleData = p('wp_sched_v2', {});
+    schedWeek = p('wp_sched_week_v1', null) || todayWeekKey();
+    schedDay  = p('wp_sched_day_v1', 'mon');
+}
+function saveSchedState() {
+    localStorage.setItem('wp_sched_v2',      JSON.stringify(scheduleData));
+    localStorage.setItem('wp_sched_week_v1', JSON.stringify(schedWeek));
+    localStorage.setItem('wp_sched_day_v1',  JSON.stringify(schedDay));
+}
+
+function switchTab(tab) {
+    document.getElementById('tab-week').style.display         = tab === 'week'         ? '' : 'none';
+    document.getElementById('tab-sched').style.display        = tab === 'sched'        ? '' : 'none';
+    document.getElementById('tab-stundenplan').style.display  = tab === 'stundenplan'  ? '' : 'none';
+    document.getElementById('app-tab-week').classList.toggle('active',        tab === 'week');
+    document.getElementById('app-tab-sched').classList.toggle('active',       tab === 'sched');
+    document.getElementById('app-tab-stundenplan').classList.toggle('active', tab === 'stundenplan');
+    if (tab === 'sched')        renderSchedTab();
+    if (tab === 'stundenplan')  renderStundenplanTab();
+}
+
+function renderSchedTab() {
+    renderSchedWeekLabel();
+    renderSchedWeek();
+}
+
+function renderSchedWeekLabel() {
+    const { kw, range } = formatWeekLabel(schedWeek);
+    document.getElementById('sched-week-label').innerHTML = `KW ${kw}<span class="week-sub">${range}</span>`;
+    const btn = document.getElementById('sched-btn-today');
+    if (btn) btn.classList.toggle('is-current', schedWeek === todayWeekKey());
+}
+
+function shiftSchedWeek(delta) {
+    schedWeek = shiftWeekKey(schedWeek, delta);
+    saveSchedState(); renderSchedTab();
+}
+function goToSchedToday() {
+    schedWeek = todayWeekKey();
+    saveSchedState(); renderSchedTab();
+}
+
+function schedWeekMonday() {
+    const [y, wn] = schedWeek.split('-W').map(Number);
+    const jan4 = new Date(y, 0, 4);
+    const mon = new Date(jan4);
+    mon.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (wn - 1) * 7);
+    return mon;
+}
+
+function todaySchedDayKey() {
+    const now = new Date();
+    return ['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+}
+
+function layoutAppts(appts) {
+    const sorted = appts.map(a => ({ ...a })).sort((a, b) => a.start.localeCompare(b.start));
+    const cols = [];
+    sorted.forEach(a => {
+        let col = cols.findIndex(endTime => endTime <= a.start);
+        if (col === -1) col = cols.length;
+        cols[col] = a.end;
+        a._col = col;
+    });
+    const total = Math.max(cols.length, 1);
+    sorted.forEach(a => { a._total = total; });
+    return sorted;
+}
+
+function renderSchedWeek() {
+    const el = document.getElementById('sched-week-outer');
+    const weekData = scheduleData[schedWeek] || {};
+    const mon = schedWeekMonday();
+    const todayKey = todaySchedDayKey();
+    const isThisWeek = schedWeek === todayWeekKey();
+
+    // Time column — invisible spacer matches day-header height exactly, then labelled inner area
+    let timecol = '<div class="sched-time-col">'
+        + '<div class="sched-wh-day" style="visibility:hidden;pointer-events:none;border-color:transparent">M<span>0</span></div>'
+        + '<div class="sched-time-inner" style="height:' + GRID_H + 'px">';
+    for (let sh = 6; sh <= 21; sh++) {
+        timecol += '<span class="sched-hour-lbl" style="top:' + ((sh-6)*2*ROW_H) + 'px">' + sh + '</span>';
+    }
+    timecol += '</div></div>';
+
+    // Each day: header cell + content column wrapped together so they can never misalign
+    let daywrappers = '';
+    DAYS.forEach((d, i) => {
+        const date = new Date(mon); date.setDate(mon.getDate() + i);
+        const dateStr = date.getDate() + '.' + (date.getMonth()+1) + '.';
+        const isToday = isThisWeek && d.key === todayKey;
+        const isExp   = d.key === schedExpandedDay;
+        const appts   = layoutAppts(weekData[d.key] || []);
+
+        daywrappers += '<div class="sched-day-wrapper' + (isExp?' expanded':'') + '" style="flex:' + (isExp ? 3 : 1) + '">';
+
+        // Header cell
+        daywrappers += '<div class="sched-wh-day' + (d.weekend?' weekend':'') + (isToday?' today':'') + (isExp?' expanded':'') + '"'
+            + ' onclick="toggleExpandDay(\'' + d.key + '\')">'
+            + d.label.slice(0,2) + (isToday ? '<span class="sched-wh-today-dot"></span>' : '')
+            + '<span>' + dateStr + '</span></div>';
+
+        // Content column
+        daywrappers += '<div class="sched-day-col' + (d.weekend?' weekend':'') + '" style="height:' + GRID_H + 'px">';
+        SCHED_SLOTS.slice(0,-1).forEach((slot, si) => {
+            const top = si * ROW_H;
+            const mm  = parseInt(slot.split(':')[1]);
+            daywrappers += '<div class="sched-line' + (mm===0?' hour':'') + '" style="top:' + top + 'px"></div>';
+            daywrappers += '<div class="sched-click-zone" style="top:' + top + 'px;height:' + ROW_H + 'px" onclick="openApptForm(\'' + d.key + '\',\'' + slot + '\')"></div>';
+        });
+        appts.forEach(a => {
+            const persons = Array.isArray(a.persons) ? a.persons : (a.person ? [a.person] : []);
+            const firstP  = SCHED_PERSONS.find(x => x.name === persons[0]);
+            const top    = slotIdx(a.start) * ROW_H;
+            const height = Math.max((slotIdx(a.end) - slotIdx(a.start)) * ROW_H, ROW_H);
+            const colW   = 100 / a._total;
+            const left   = a._col * colW;
+            const bg     = firstP ? firstP.bg    : '#f0f0f0';
+            const color  = firstP ? firstP.color : '#555';
+            const pills  = persons.map(name => {
+                const p = SCHED_PERSONS.find(x => x.name === name);
+                return '<span class="saa-person-pill" style="background:' + (p?p.bg:'#eee') + ';color:' + (p?p.color:'#999') + '">' + h(name) + '</span>';
+            }).join('');
+            daywrappers += '<div class="sched-appt"'
+                + ' onclick="event.stopPropagation();openEditApptForm(\'' + d.key + '\',\'' + a.id + '\')"'
+                + ' onmouseenter="showApptTooltip(event,\'' + d.key + '\',\'' + a.id + '\')"'
+                + ' onmouseleave="hideApptTooltip()"'
+                + ' style="top:' + top + 'px;height:' + height + 'px;left:' + left.toFixed(1) + '%;width:calc(' + colW.toFixed(1) + '% - 2px);background:' + bg + ';color:' + color + ';border-left-color:' + color + '">'
+                + '<span class="saa-title">' + h(a.title) + '</span>'
+                + '<div class="saa-dots">' + pills + '</div></div>';
+        });
+        daywrappers += '</div>';  // sched-day-col
+        daywrappers += '</div>';  // sched-day-wrapper
+    });
+
+    el.innerHTML = '<div class="sched-week-scroll"><div class="sched-week-grid">' + timecol + daywrappers + '</div></div>';
+}
+
+function deleteSchedAppt(dayKey, id) {
+    if (!scheduleData[schedWeek]?.[dayKey]) return;
+    scheduleData[schedWeek][dayKey] = scheduleData[schedWeek][dayKey].filter(a => a.id !== id);
+    saveSchedState(); renderSchedWeek();
+}
+
+let apptFormDay = null;
+let apptFormEditDayKey = null;
+
+function openApptForm(prefillDay, prefillStart) {
+    apptFormEditId = null;
+    apptFormEditDayKey = null;
+    apptFormDay = prefillDay || todaySchedDayKey();
+    document.getElementById('appt-form-title').textContent = 'Neuer Termin';
+    document.getElementById('appt-title').value = '';
+    document.getElementById('appt-del-btn').style.display = 'none';
+
+    document.getElementById('appt-days').innerHTML = DAYS.map(d =>
+        '<button class="appt-day-btn' + (d.key === apptFormDay ? ' active' : '') + '" data-day="' + d.key + '"'
+        + ' onclick="selectApptDay(\'' + d.key + '\')">' + d.label.slice(0,2) + '</button>'
+    ).join('');
+
+    document.getElementById('appt-persons').innerHTML = SCHED_PERSONS.map(p =>
+        '<button class="appt-pers-btn" data-person="' + p.name + '"'
+        + ' style="border-color:' + p.color + ';color:' + p.color + '"'
+        + ' onclick="toggleApptPerson(this)">' + h(p.name) + '</button>'
+    ).join('');
+
+    document.getElementById('appt-start').innerHTML = SCHED_SLOTS.slice(0,-1).map(s =>
+        '<option value="' + s + '"' + (s === (prefillStart || '08:00') ? ' selected' : '') + '>' + s + '</option>'
+    ).join('');
+    syncApptEnd();
+
+    document.getElementById('appt-form-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('appt-title').focus(), 80);
+}
+
+function openEditApptForm(dayKey, id) {
+    const appt = (scheduleData[schedWeek]?.[dayKey] || []).find(a => a.id === id);
+    if (!appt) return;
+    apptFormEditId = id;
+    apptFormEditDayKey = dayKey;
+    apptFormDay = dayKey;
+    document.getElementById('appt-form-title').textContent = 'Termin bearbeiten';
+    document.getElementById('appt-title').value = appt.title;
+    document.getElementById('appt-del-btn').style.display = '';
+
+    document.getElementById('appt-days').innerHTML = DAYS.map(d =>
+        '<button class="appt-day-btn' + (d.key === apptFormDay ? ' active' : '') + '" data-day="' + d.key + '"'
+        + ' onclick="selectApptDay(\'' + d.key + '\')">' + d.label.slice(0,2) + '</button>'
+    ).join('');
+
+    const activePersns = new Set(Array.isArray(appt.persons) ? appt.persons : (appt.person ? [appt.person] : []));
+    document.getElementById('appt-persons').innerHTML = SCHED_PERSONS.map(p =>
+        '<button class="appt-pers-btn' + (activePersns.has(p.name) ? ' active' : '') + '" data-person="' + p.name + '"'
+        + ' style="border-color:' + p.color + ';color:' + p.color + '"'
+        + ' onclick="toggleApptPerson(this)">' + h(p.name) + '</button>'
+    ).join('');
+
+    document.getElementById('appt-start').innerHTML = SCHED_SLOTS.slice(0,-1).map(s =>
+        '<option value="' + s + '"' + (s === appt.start ? ' selected' : '') + '>' + s + '</option>'
+    ).join('');
+    const endSel = document.getElementById('appt-end');
+    const startI = SCHED_SLOTS.indexOf(appt.start);
+    endSel.innerHTML = SCHED_SLOTS.slice(startI + 1).map(s =>
+        '<option value="' + s + '"' + (s === appt.end ? ' selected' : '') + '>' + s + '</option>'
+    ).join('');
+
+    document.getElementById('appt-form-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('appt-title').focus(), 80);
+}
+
+function deleteApptFromForm() {
+    if (!apptFormEditId || !apptFormEditDayKey) return;
+    deleteSchedAppt(apptFormEditDayKey, apptFormEditId);
+    closeApptForm();
+}
+
+function closeApptForm() {
+    document.getElementById('appt-form-overlay').classList.remove('open');
+    apptFormDay = null;
+    apptFormEditId = null;
+    apptFormEditDayKey = null;
+}
+
+function selectApptDay(dayKey) {
+    apptFormDay = dayKey;
+    document.querySelectorAll('.appt-day-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.day === dayKey));
+}
+
+function toggleApptPerson(btn) {
+    btn.classList.toggle('active');
+}
+
+function syncApptEnd() {
+    const startVal = document.getElementById('appt-start').value;
+    const startI   = SCHED_SLOTS.indexOf(startVal);
+    const endSel   = document.getElementById('appt-end');
+    const prevEnd  = endSel.value;
+    endSel.innerHTML = SCHED_SLOTS.slice(startI + 1).map(s =>
+        '<option value="' + s + '"' + (s === prevEnd ? ' selected' : '') + '>' + s + '</option>'
+    ).join('');
+    if (!endSel.value && SCHED_SLOTS[startI + 2]) endSel.value = SCHED_SLOTS[startI + 2];
+}
+
+function saveApptForm() {
+    const title   = document.getElementById('appt-title').value.trim();
+    const persons = [...document.querySelectorAll('.appt-pers-btn.active')].map(b => b.dataset.person);
+    const start   = document.getElementById('appt-start').value;
+    const end     = document.getElementById('appt-end').value;
+
+    if (!title)          { document.getElementById('appt-title').focus(); return; }
+    if (!persons.length) { alert('Bitte mindestens eine Person ausw\xe4hlen.'); return; }
+    if (!end || end <= start) { alert('Endzeit muss nach Startzeit liegen.'); return; }
+
+    const dayKey = apptFormDay;
+    if (!scheduleData[schedWeek])         scheduleData[schedWeek] = {};
+    if (!scheduleData[schedWeek][dayKey]) scheduleData[schedWeek][dayKey] = [];
+
+    if (apptFormEditId) {
+        // Edit existing: remove from old day, add to new day
+        const oldDayKey = apptFormEditDayKey;
+        if (oldDayKey !== dayKey && scheduleData[schedWeek][oldDayKey]) {
+            scheduleData[schedWeek][oldDayKey] = scheduleData[schedWeek][oldDayKey].filter(a => a.id !== apptFormEditId);
+        }
+        if (!scheduleData[schedWeek][dayKey]) scheduleData[schedWeek][dayKey] = [];
+        const appts = scheduleData[schedWeek][dayKey];
+        const overlap = appts.filter(a => a.id !== apptFormEditId && a.start < end && a.end > start).length;
+        if (overlap >= 5) { alert('Maximal 5 gleichzeitige Termine erlaubt.'); return; }
+        const idx = appts.findIndex(a => a.id === apptFormEditId);
+        const updated = { id: apptFormEditId, persons, title, start, end };
+        if (idx >= 0) appts[idx] = updated; else appts.push(updated);
+    } else {
+        const appts = scheduleData[schedWeek][dayKey];
+        const overlap = appts.filter(a => a.start < end && a.end > start).length;
+        if (overlap >= 5) { alert('Maximal 5 gleichzeitige Termine erlaubt.'); return; }
+        appts.push({ id: uid(), persons, title, start, end });
+    }
+    saveSchedState(); closeApptForm(); renderSchedWeek();
+}
+
+function toggleExpandDay(dayKey) {
+    schedExpandedDay = (schedExpandedDay === dayKey) ? null : dayKey;
+    renderSchedWeek();
+}
+
+function showApptTooltip(e, dayKey, id) {
+    const appt = (scheduleData[schedWeek]?.[dayKey] || []).find(a => a.id === id);
+    if (!appt) return;
+    const persons = Array.isArray(appt.persons) ? appt.persons : (appt.person ? [appt.person] : []);
+    const pills = persons.map(name => {
+        const p = SCHED_PERSONS.find(x => x.name === name);
+        return '<span class="saa-person-pill" style="background:' + (p?p.bg:'#eee') + ';color:' + (p?p.color:'#999') + '">' + h(name) + '</span>';
+    }).join('');
+    const tip = document.getElementById('sched-tooltip');
+    tip.innerHTML = '<strong>' + h(appt.title) + '</strong>'
+        + '<div class="sched-tooltip-time">' + appt.start + ' – ' + appt.end + '</div>'
+        + '<div class="sched-tooltip-persons">' + pills + '</div>';
+    tip.classList.add('visible');
+    const margin = 14;
+    let x = e.clientX + margin, y = e.clientY + margin;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    requestAnimationFrame(() => {
+        if (x + tip.offsetWidth + margin > window.innerWidth)  tip.style.left = (e.clientX - tip.offsetWidth - margin) + 'px';
+        if (y + tip.offsetHeight + margin > window.innerHeight) tip.style.top  = (e.clientY - tip.offsetHeight - margin) + 'px';
+    });
+}
+
+function hideApptTooltip() {
+    document.getElementById('sched-tooltip').classList.remove('visible');
+}
+
+// ── INIT ──
+applySeasonTheme();
+loadState();
+loadSchedState();
+loadStundenplan();
+renderMeals();
+renderWeekGrid();
+updateKeyIndicator();
+document.getElementById('img-upload-input').addEventListener('change', handleImageUpload);
+</script>
+<div id="sched-tooltip" class="sched-tooltip"></div>
+</body>
+</html>
