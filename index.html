@@ -1489,6 +1489,15 @@
             <button class="btn btn-outline btn-sm" onclick="toggleGcalPanel()">📅 Google Kalender</button>
         </div>
 
+        <!-- Proxy Status -->
+        <div class="sm-bar" id="proxy-bar">
+            <div class="sm-status">
+                <span class="sm-dot" id="proxy-dot"></span>
+                <span id="proxy-status-text">Proxy wird gesucht …</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="proxy-stop-btn" onclick="proxyStop()" style="display:none">Proxy beenden</button>
+        </div>
+
         <!-- Google Calendar Panel -->
         <div class="gcal-panel" id="gcal-panel" style="display:none">
             <div style="font-weight:700;font-size:.95rem">Google Kalender synchronisieren</div>
@@ -4251,7 +4260,7 @@ function switchTab(tab) {
     document.getElementById('app-tab-week').classList.toggle('active',        tab === 'week');
     document.getElementById('app-tab-sched').classList.toggle('active',       tab === 'sched');
     document.getElementById('app-tab-stundenplan').classList.toggle('active', tab === 'stundenplan');
-    if (tab === 'sched')        renderSchedTab();
+    if (tab === 'sched')        { renderSchedTab(); checkProxyStatus(); }
     if (tab === 'stundenplan')  { renderStundenplanTab(); smCheckStatus(); }
 }
 
@@ -4545,6 +4554,31 @@ function showApptTooltip(e, dayKey, id) {
 
 function hideApptTooltip() {
     document.getElementById('sched-tooltip').classList.remove('visible');
+}
+
+// ── PROXY STATUS ──
+async function checkProxyStatus() {
+    try {
+        const r = await fetch(SM_PROXY + '/status', { signal: AbortSignal.timeout(2000) });
+        if (r.ok) { proxySetOnline(); } else { proxySetOffline(); }
+    } catch { proxySetOffline(); }
+}
+
+function proxySetOnline() {
+    document.getElementById('proxy-dot').className = 'sm-dot connected';
+    document.getElementById('proxy-status-text').textContent = 'Proxy läuft';
+    document.getElementById('proxy-stop-btn').style.display = '';
+}
+
+function proxySetOffline() {
+    document.getElementById('proxy-dot').className = 'sm-dot';
+    document.getElementById('proxy-status-text').textContent = 'Proxy nicht aktiv';
+    document.getElementById('proxy-stop-btn').style.display = 'none';
+}
+
+async function proxyStop() {
+    try { await fetch(SM_PROXY + '/shutdown').catch(() => {}); } catch {}
+    setTimeout(checkProxyStatus, 600);
 }
 
 // ── GOOGLE CALENDAR SYNC ──
