@@ -26,10 +26,12 @@ except ImportError:
 try:
     from icalendar import Calendar as ICal
     from zoneinfo import ZoneInfo
+    import recurring_ical_events
     _BERLIN = ZoneInfo('Europe/Berlin')
     HAS_ICAL = True
-except ImportError:
+except ImportError as _ical_err:
     HAS_ICAL = False
+    _ical_err_msg = str(_ical_err)
 
 PORT = 8765
 LOGIN_URL  = "https://login.schulmanager-online.de/api/login"
@@ -289,47 +291,41 @@ def parse_gcal_week(week_key: str) -> list:
     resp.raise_for_status()
 
     from datetime import date as date_type
-    cal    = ICal.from_ical(resp.content)
+    cal = ICal.from_ical(resp.content)
+
+    # recurring_ical_events expandiert Serientermine automatisch
+    start_dt = datetime(week_start.year, week_start.month, week_start.day)
+    end_dt   = datetime(week_end.year,   week_end.month,   week_end.day, 23, 59, 59)
+    occurrences = recurring_ical_events.of(cal).between(start_dt, end_dt)
+
     events = []
-
-    for comp in cal.walk():
-        if comp.name != 'VEVENT':
-            continue
-        if comp.get('RRULE'):          # Wiederkehrende Termine – vorerst überspringen
-            continue
-
+    for comp in occurrences:
         dtstart = comp.get('DTSTART')
         dtend   = comp.get('DTEND')
         summary = str(comp.get('SUMMARY', 'Ohne Titel'))
-
         if not dtstart:
             continue
 
         dt = dtstart.dt
 
-        # Ganztägige Termine (date, kein datetime)
+        # Ganztägige Termine
         if isinstance(dt, date_type) and not isinstance(dt, datetime):
-            if week_start <= dt <= week_end:
-                events.append({'date': dt.strftime('%Y-%m-%d'),
-                               'title': summary, 'start': '00:00',
-                               'end': '23:59', 'allDay': True})
+            events.append({'date': dt.strftime('%Y-%m-%d'), 'title': summary,
+                           'start': '00:00', 'end': '23:59', 'allDay': True})
             continue
 
-        # Datum/Uhrzeit mit Zeitzone → Berliner Ortszeit
+        # Zeitzone → Berliner Ortszeit
         if dt.tzinfo is not None:
             dt = dt.astimezone(_BERLIN).replace(tzinfo=None)
 
-        if not (week_start <= dt.date() <= week_end):
-            continue
-
         if dtend:
-            end_dt = dtend.dt
-            if isinstance(end_dt, datetime) and end_dt.tzinfo is not None:
-                end_dt = end_dt.astimezone(_BERLIN).replace(tzinfo=None)
+            end = dtend.dt
+            if isinstance(end, datetime) and end.tzinfo is not None:
+                end = end.astimezone(_BERLIN).replace(tzinfo=None)
         else:
-            end_dt = dt + timedelta(hours=1)
+            end = dt + timedelta(hours=1)
 
-        end_str_fmt = end_dt.strftime('%H:%M') if isinstance(end_dt, datetime) else '23:59'
+        end_str_fmt = end.strftime('%H:%M') if isinstance(end, datetime) else '23:59'
         events.append({'date': dt.strftime('%Y-%m-%d'), 'title': summary,
                        'start': dt.strftime('%H:%M'), 'end': end_str_fmt,
                        'allDay': False})
