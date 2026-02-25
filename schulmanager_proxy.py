@@ -29,9 +29,10 @@ try:
     import recurring_ical_events
     _BERLIN = ZoneInfo('Europe/Berlin')
     HAS_ICAL = True
+    _ical_err_msg = ''
 except ImportError as _ical_err:
     HAS_ICAL = False
-    _ical_err_msg = str(_ical_err)
+    _ical_err_msg = f"Fehlendes Paket: {_ical_err.name}. Bitte ausführen: pip install icalendar recurring-ical-events"
 
 PORT = 8765
 LOGIN_URL  = "https://login.schulmanager-online.de/api/login"
@@ -279,7 +280,7 @@ def _save_gcal_config(url: str):
 def parse_gcal_week(week_key: str) -> list:
     """Holt und parst den Google Kalender iCal für die angegebene Woche."""
     if not HAS_ICAL:
-        raise RuntimeError("icalendar nicht installiert. Bitte: pip install icalendar")
+        raise RuntimeError(_ical_err_msg or "icalendar/recurring-ical-events nicht installiert.")
     if not _gcal_url:
         raise RuntimeError("Kein iCal-URL konfiguriert")
 
