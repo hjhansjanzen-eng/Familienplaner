@@ -4360,8 +4360,8 @@ function renderSchedWeek() {
             const height = Math.max((slotIdx(a.end) - slotIdx(a.start)) * ROW_H, ROW_H);
             const colW   = 100 / a._total;
             const left   = a._col * colW;
-            const bg     = a.gcal ? '#e8f0fe' : (firstP ? firstP.bg    : '#f0f0f0');
-            const color  = a.gcal ? '#1a73e8' : (firstP ? firstP.color : '#555');
+            const bg     = firstP ? firstP.bg    : (a.gcal ? '#e8f0fe' : '#f0f0f0');
+            const color  = firstP ? firstP.color : (a.gcal ? '#1a73e8' : '#555');
             const pills  = persons.map(name => {
                 const p = SCHED_PERSONS.find(x => x.name === name);
                 return '<span class="saa-person-pill" style="background:' + (p?p.bg:'#eee') + ';color:' + (p?p.color:'#999') + '">' + h(name) + '</span>';
@@ -4612,8 +4612,9 @@ async function gcalSync() {
         localStorage.setItem(LS_GCAL_URL, url);
 
         // Aktuelle Woche synchronisieren
-        const count = await gcalFetchWeek(schedWeek);
-        infoEl.textContent = count + ' Termine importiert ✓';
+        const { total, withPerson } = await gcalFetchWeek(schedWeek);
+        infoEl.textContent = total + ' Termine importiert ✓'
+            + (withPerson ? ' (' + withPerson + ' mit Person)' : ' (0 Personen erkannt)');
     } catch(e) {
         errEl.textContent = e.name === 'TimeoutError'
             ? 'Proxy nicht erreichbar. Ist schulmanager_proxy.py gestartet?'
@@ -4636,6 +4637,7 @@ async function gcalFetchWeek(week) {
         });
     }
     // Neue Termine einfügen
+    let withPerson = 0;
     d.events.forEach(ev => {
         if (ev.allDay) return; // Ganztägige Termine überspringen
         const dateObj = new Date(ev.date + 'T00:00:00');
@@ -4647,6 +4649,7 @@ async function gcalFetchWeek(week) {
         const persons = SCHED_PERSONS
             .filter(p => titleLower.includes(p.name.toLowerCase()))
             .map(p => p.name);
+        if (persons.length) withPerson++;
         scheduleData[week][dayKey].push({
             id: 'gcal-' + uid(), title: ev.title,
             start: ev.start, end: ev.end, persons, gcal: true
@@ -4654,7 +4657,7 @@ async function gcalFetchWeek(week) {
     });
     saveSchedState();
     renderSchedWeek();
-    return d.count;
+    return { total: d.count, withPerson };
 }
 
 // ── SCHULMANAGER INTEGRATION ──
