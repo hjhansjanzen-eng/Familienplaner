@@ -4357,8 +4357,10 @@ function renderSchedWeek() {
         appts.forEach(a => {
             const persons = Array.isArray(a.persons) ? a.persons : (a.person ? [a.person] : []);
             const firstP  = SCHED_PERSONS.find(x => x.name === persons[0]);
-            const top    = slotIdx(a.start) * ROW_H;
-            const height = Math.max((slotIdx(a.end) - slotIdx(a.start)) * ROW_H, ROW_H);
+            const startI = Math.min(slotIdx(a.start), SCHED_SLOTS.length - 2); // max = letzte sichtbare Zeile
+            const endI   = slotIdx(a.end);
+            const top    = startI * ROW_H;
+            const height = Math.max((endI - startI) * ROW_H, ROW_H);
             const colW   = 100 / a._total;
             const left   = a._col * colW;
             const bg     = firstP ? firstP.bg    : (a.gcal ? '#e8f0fe' : '#f0f0f0');
@@ -4641,7 +4643,7 @@ async function gcalFetchWeek(week) {
     let withPerson = 0;
     d.events.forEach(ev => {
         if (ev.allDay) return; // Ganztägige Termine überspringen
-        if (ev.start >= '22:00' || ev.end <= '07:00') return; // Außerhalb sichtbaren Bereichs
+        if (ev.end <= '07:00') return; // Endet vor Kalenderstart
         const dateObj = new Date(ev.date + 'T00:00:00');
         const dayKey  = ['sun','mon','tue','wed','thu','fri','sat'][dateObj.getDay()];
         if (!scheduleData[week]) scheduleData[week] = {};
