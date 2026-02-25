@@ -4642,9 +4642,14 @@ async function gcalFetchWeek(week) {
         const dayKey  = ['sun','mon','tue','wed','thu','fri','sat'][dateObj.getDay()];
         if (!scheduleData[week]) scheduleData[week] = {};
         if (!scheduleData[week][dayKey]) scheduleData[week][dayKey] = [];
+        // Personen anhand des Titels erkennen
+        const titleLower = ev.title.toLowerCase();
+        const persons = SCHED_PERSONS
+            .filter(p => titleLower.includes(p.name.toLowerCase()))
+            .map(p => p.name);
         scheduleData[week][dayKey].push({
             id: 'gcal-' + uid(), title: ev.title,
-            start: ev.start, end: ev.end, persons: [], gcal: true
+            start: ev.start, end: ev.end, persons, gcal: true
         });
     });
     saveSchedState();
