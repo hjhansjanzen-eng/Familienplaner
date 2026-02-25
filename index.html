@@ -3221,6 +3221,8 @@ function renderShoppingList() {
 
     const total = items.length;
     const done  = items.filter(it => checkedItems[it.key]).length;
+    // abgehakte Produkte nach unten sortieren
+    items.sort((a, b) => (checkedItems[a.key] ? 1 : 0) - (checkedItems[b.key] ? 1 : 0));
     wrap.innerHTML = `
         <div class="shop-stats">
             <span class="stat-tag">${total - done} offen</span>
@@ -3280,8 +3282,10 @@ function addCustomItem() {
     customShopItems.push({ id: uid(), name, amount, unit });
     save();
     renderShoppingList();
-    // restore focus after re-render
-    document.getElementById('ci-name')?.focus();
+    document.getElementById('ci-name').value  = '';
+    document.getElementById('ci-amt').value   = '';
+    document.getElementById('ci-unit').value  = '';
+    document.getElementById('ci-name').focus();
 }
 
 function deleteCustomItem(id) {
@@ -3292,18 +3296,9 @@ function deleteCustomItem(id) {
 }
 
 function toggleItem(cb) {
-    const key = cb.dataset.key;
-    checkedItems[key] = cb.checked;
+    checkedItems[cb.dataset.key] = cb.checked;
     save();
-    cb.closest('.shop-item').classList.toggle('done', cb.checked);
-    const items = allShoppingItems();
-    const total = items.length;
-    const done  = items.filter(it => checkedItems[it.key]).length;
-    const stats = document.querySelector('.shop-stats');
-    if (stats) {
-        stats.querySelector('.stat-tag').textContent = (total - done) + ' offen';
-        stats.querySelector('span:last-child').textContent = `${done} von ${total} Artikeln erledigt`;
-    }
+    renderShoppingList();
 }
 
 function resetChecked() {
@@ -3563,13 +3558,13 @@ async function fetchRecipeSteps(meal) {
 
 // ── SHARE SHOPPING LIST ──
 function getShoppingListText() {
-    const items = allShoppingItems();
+    const items = allShoppingItems().filter(it => !checkedItems[it.key]);
     if (!items.length) return '';
     const { kw, range } = formatWeekLabel(currentWeek);
     const lines = items.map(it => {
         const amtStr = it.amount ? `${fmtAmt(it.amount)} ${it.unit}` : (it.unit || '');
         const parts  = [amtStr, it.name].filter(Boolean);
-        return `${checkedItems[it.key] ? '☑' : '☐'} ${parts.join('  ')}`;
+        return `☐ ${parts.join('  ')}`;
     });
     return `🛒 Einkaufsliste – KW ${kw}\n${range}\n${'─'.repeat(28)}\n${lines.join('\n')}`;
 }
