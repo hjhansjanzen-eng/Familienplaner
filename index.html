@@ -641,6 +641,14 @@
         .si-name { flex: 1; font-size: .88rem; }
         .shop-item.done .si-name { text-decoration: line-through; color: var(--text-4); }
         .shop-item.done .si-amt  { color: var(--text-4); }
+        .shop-cat-header {
+            display: flex; align-items: center; gap: 7px;
+            padding: 8px 18px 5px; background: var(--bg);
+            border-bottom: 0.5px solid var(--border-lt);
+        }
+        .shop-cat-emoji { font-size: .95rem; line-height: 1; }
+        .shop-cat-label { font-size: .7rem; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .6px; }
+        .shop-cat-done { border-top: 1.5px solid var(--border); }
 
         /* ══ MODAL ══ */
         .overlay {
@@ -3174,6 +3182,39 @@ function goToToday() {
 }
 
 // ── SHOPPING LIST ──
+const SHOP_CATEGORIES = [
+    { id: 'gemuese',   label: 'Gemüse',             emoji: '🥦', kw: ['karotte','kartoffel','zwiebel','knoblauch','tomate','gurke','salat','spinat','brokkoli','paprika','zucchini','aubergine','kohl','lauch','sellerie','rübe','pilz','champignon','erbsen','mais','möhre','fenchel','rosenkohl','blumenkohl','kohlrabi','ingwer','rucola','avocado','kürbis','frühlingszwiebel','pak choi','gemüse','süßkartoffel','mairübchen','spargel','artischocke'] },
+    { id: 'obst',      label: 'Obst',                emoji: '🍎', kw: ['apfel','birne','banane','orange','zitrone','limette','traube','erdbeere','himbeere','brombeere','blaubeere','heidelbeere','kirsche','pfirsich','aprikose','pflaume','mango','ananas','melone','kiwi','beere','weintraube','feige','granatapfel','obst'] },
+    { id: 'milch',     label: 'Milchprodukte',       emoji: '🥛', kw: ['milch','käse','joghurt','butter','sahne','quark','schmand','creme fraiche','frischkäse','mozzarella','parmesan','gouda','brie','feta','emmentaler','mascarpone','ricotta','schlagsahne','kondensmilch','buttermilch','sauerrahm'] },
+    { id: 'eier',      label: 'Eier',                emoji: '🥚', kw: ['eier'] },
+    { id: 'fleisch',   label: 'Fleisch & Fisch',     emoji: '🥩', kw: ['fleisch','hackfleisch','rinderhack','rindfleisch','schweinefleisch','hähnchen','hühnchen','huhn','pute','fisch','lachs','thunfisch','garnele','wurst','salami','schinken','speck','steak','filet','schnitzel','chorizo','bratwurst','lamm','ente','forelle','kabeljau','tilapia','muschel','meeresfrüchte'] },
+    { id: 'brot',      label: 'Brot & Backwaren',    emoji: '🍞', kw: ['brot','brötchen','toast','baguette','croissant','mehl','hefe','vollkornbrot','ciabatta','pita','tortilla','wrap','knäckebrot','brezel'] },
+    { id: 'nudeln',    label: 'Nudeln & Reis',        emoji: '🍝', kw: ['nudeln','pasta','spaghetti','penne','fusilli','tagliatelle','farfalle','rigatoni','reis','couscous','quinoa','bulgur','polenta','linsen','kichererbsen'] },
+    { id: 'konserven', label: 'Konserven & Trocken', emoji: '🥫', kw: ['dose','konserve','dosentomaten','passierte tomaten','tomatensauce','kokosmilch','brühe','suppenwürfel','instant','hühnerbrühe','gemüsebrühe'] },
+    { id: 'gewuerze',  label: 'Gewürze & Saucen',    emoji: '🧂', kw: ['salz','pfeffer','gewürz','sauce','ketchup','senf','mayo','essig','olivenöl','speiseöl','zucker','honig','tomatenmark','soße','curry','paprikapulver','kurkuma','oregano','basilikum','thymian','rosmarin','petersilie','koriander','kreuzkümmel','chili','zimt','vanille','backpulver','sojasauce','fischsauce','sambal','tahini','balsamico'] },
+    { id: 'getraenke', label: 'Getränke',             emoji: '🧃', kw: ['wasser','saft','bier','wein','kaffee','tee','cola','limo','limonade','sprudel','mineralwasser','smoothie'] },
+    { id: 'sonstiges', label: 'Sonstiges',             emoji: '🛒', kw: [] }
+];
+
+function getItemCategory(name) {
+    const lower = name.toLowerCase();
+    for (const cat of SHOP_CATEGORIES) {
+        if (cat.kw.some(kw => lower === kw || lower.startsWith(kw + ' ') || lower.includes(' ' + kw) || lower.includes(kw + ' '))) return cat;
+    }
+    return SHOP_CATEGORIES[SHOP_CATEGORIES.length - 1];
+}
+
+function renderShopItem(it) {
+    const ck = checkedItems[it.key] || false;
+    const amtStr = it.amount ? `${fmtAmt(it.amount)} ${h(it.unit)}` : (it.unit ? h(it.unit) : '');
+    return `<div class="shop-item${ck ? ' done' : ''}">
+        <input type="checkbox" ${ck ? 'checked' : ''} data-key="${h(it.key)}" onchange="toggleItem(this)">
+        <span class="si-amt" onclick="editItemAmount(this,'${h(it.key)}',${it.amount||0},'${h(it.unit)}')" title="Menge anpassen">${amtStr || '–'}</span>
+        <span class="si-name">${h(it.name)}</span>
+        ${it.isCustom ? `<button class="btn-del" onclick="deleteCustomItem('${h(it.id)}')" title="Entfernen">×</button>` : ''}
+    </div>`;
+}
+
 function buildShoppingItems() {
     const agg = {};
     const plan = currentPlan();
@@ -3221,25 +3262,38 @@ function renderShoppingList() {
 
     const total = items.length;
     const done  = items.filter(it => checkedItems[it.key]).length;
-    // abgehakte Produkte nach unten sortieren
-    items.sort((a, b) => (checkedItems[a.key] ? 1 : 0) - (checkedItems[b.key] ? 1 : 0));
+
+    const unchecked = items.filter(it => !checkedItems[it.key]);
+    const checked   = items.filter(it =>  checkedItems[it.key]);
+
+    // Offene Produkte nach Kategorie gruppieren
+    const groups = new Map(SHOP_CATEGORIES.map(c => [c.id, []]));
+    unchecked.forEach(it => groups.get(getItemCategory(it.name).id).push(it));
+
+    let listHtml = '';
+    SHOP_CATEGORIES.forEach(cat => {
+        const g = groups.get(cat.id);
+        if (!g.length) return;
+        listHtml += `<div class="shop-cat-header">
+            <span class="shop-cat-emoji">${cat.emoji}</span>
+            <span class="shop-cat-label">${cat.label}</span>
+        </div>`;
+        listHtml += g.map(it => renderShopItem(it)).join('');
+    });
+    if (checked.length) {
+        listHtml += `<div class="shop-cat-header shop-cat-done">
+            <span class="shop-cat-emoji">☑️</span>
+            <span class="shop-cat-label">Erledigt</span>
+        </div>`;
+        listHtml += checked.map(it => renderShopItem(it)).join('');
+    }
+
     wrap.innerHTML = `
         <div class="shop-stats">
             <span class="stat-tag">${total - done} offen</span>
             <span>${done} von ${total} Artikeln erledigt</span>
         </div>
-        <div class="shop-list">
-            ${items.map(it => {
-                const ck = checkedItems[it.key] || false;
-                const amtStr = it.amount ? `${fmtAmt(it.amount)} ${h(it.unit)}` : (it.unit ? h(it.unit) : '');
-                return `<div class="shop-item${ck ? ' done' : ''}">
-                    <input type="checkbox" ${ck ? 'checked' : ''} data-key="${h(it.key)}" onchange="toggleItem(this)">
-                    <span class="si-amt" onclick="editItemAmount(this,'${h(it.key)}',${it.amount||0},'${h(it.unit)}')" title="Menge anpassen">${amtStr || '–'}</span>
-                    <span class="si-name">${h(it.name)}</span>
-                    ${it.isCustom ? `<button class="btn-del" onclick="deleteCustomItem('${h(it.id)}')" title="Entfernen">×</button>` : ''}
-                </div>`;
-            }).join('')}
-        </div>`;
+        <div class="shop-list">${listHtml}</div>`;
 }
 
 function editItemAmount(el, key, currentAmt, unit) {
