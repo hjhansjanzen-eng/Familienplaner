@@ -4232,7 +4232,8 @@ function calcSchedRowH() {
 
 function slotIdx(time) {
     const [hh, mm] = time.split(':').map(Number);
-    return (hh - 7) * 2 + (mm >= 30 ? 1 : 0);
+    const idx = (hh - 7) * 2 + (mm >= 30 ? 1 : 0);
+    return Math.max(0, Math.min(SCHED_SLOTS.length - 1, idx));
 }
 
 let scheduleData = {}, schedWeek = '', schedDay = 'mon';
@@ -4640,6 +4641,7 @@ async function gcalFetchWeek(week) {
     let withPerson = 0;
     d.events.forEach(ev => {
         if (ev.allDay) return; // Ganztägige Termine überspringen
+        if (ev.start >= '22:00' || ev.end <= '07:00') return; // Außerhalb sichtbaren Bereichs
         const dateObj = new Date(ev.date + 'T00:00:00');
         const dayKey  = ['sun','mon','tue','wed','thu','fri','sat'][dateObj.getDay()];
         if (!scheduleData[week]) scheduleData[week] = {};
