@@ -1490,12 +1490,10 @@
         </div>
 
         <!-- Proxy Status -->
-        <div class="sm-bar" id="proxy-bar">
-            <div class="sm-status">
-                <span class="sm-dot" id="proxy-dot"></span>
-                <span id="proxy-status-text">Proxy wird gesucht …</span>
-            </div>
-            <button class="btn btn-ghost btn-sm" id="proxy-stop-btn" onclick="proxyStop()" style="display:none">Proxy beenden</button>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+            <span class="sm-dot" id="proxy-dot" style="width:6px;height:6px"></span>
+            <span id="proxy-status-text" style="font-size:.72rem;color:var(--text-4)">Proxy wird gesucht …</span>
+            <button id="proxy-stop-btn" onclick="proxyStop()" style="display:none;font-size:.68rem;color:var(--text-4);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">beenden</button>
         </div>
 
         <!-- Google Calendar Panel -->
