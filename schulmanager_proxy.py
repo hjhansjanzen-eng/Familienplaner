@@ -5,7 +5,7 @@ Schulmanager Proxy für den Wochenplaner
 Starten mit:  python schulmanager_proxy.py
 Beenden mit:  Strg+C
 
-Voraussetzung: pip install requests
+Voraussetzung: pip install requests icalendar
 """
 
 import json
@@ -20,8 +20,16 @@ try:
     import requests
 except ImportError:
     print("Fehler: 'requests' ist nicht installiert.")
-    print("Bitte ausführen: pip install requests")
+    print("Bitte ausführen: pip install requests icalendar")
     sys.exit(1)
+
+try:
+    from icalendar import Calendar as ICal
+    from zoneinfo import ZoneInfo
+    _BERLIN = ZoneInfo('Europe/Berlin')
+    HAS_ICAL = True
+except ImportError:
+    HAS_ICAL = False
 
 PORT = 8765
 LOGIN_URL  = "https://login.schulmanager-online.de/api/login"
@@ -183,6 +191,21 @@ class ProxyHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send(500, {"error": str(e)})
 
+        elif parsed.path == "/gcal-sync":
+            week = (params.get("week") or [None])[0]
+            if not week:
+                self._send(400, {"error": "Parameter 'week' fehlt"}); return
+            try:
+                events = parse_gcal_week(week)
+                self._send(200, {"ok": True, "week": week, "events": events,
+                                 "count": len(events)})
+            except Exception as e:
+                self._send(500, {"error": str(e)})
+
+        elif parsed.path == "/gcal-status":
+            self._send(200, {"configured": bool(_gcal_url),
+                             "hasIcal": HAS_ICAL})
+
         elif parsed.path == "/shutdown":
             self._send(200, {"ok": True})
             threading.Thread(target=_shutdown_server, daemon=True).start()
@@ -219,8 +242,99 @@ class ProxyHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._send(500, {"error": str(e)})
 
+        elif parsed.path == "/gcal-url":
+            url = body.get("url", "").strip()
+            if not url:
+                self._send(400, {"error": "URL fehlt"}); return
+            try:
+                _save_gcal_config(url)
+                self._send(200, {"ok": True})
+            except Exception as e:
+                self._send(500, {"error": str(e)})
+
         else:
             self._send(404, {"error": "Nicht gefunden"})
+
+
+# ── GOOGLE CALENDAR ──
+_gcal_url    = None
+_GCAL_CONFIG = 'gcal_config.json'
+
+def _load_gcal_config():
+    global _gcal_url
+    try:
+        with open(_GCAL_CONFIG) as f:
+            _gcal_url = json.load(f).get('url') or None
+    except Exception:
+        _gcal_url = None
+
+def _save_gcal_config(url: str):
+    global _gcal_url
+    _gcal_url = url or None
+    with open(_GCAL_CONFIG, 'w') as f:
+        json.dump({'url': url}, f)
+
+def parse_gcal_week(week_key: str) -> list:
+    """Holt und parst den Google Kalender iCal für die angegebene Woche."""
+    if not HAS_ICAL:
+        raise RuntimeError("icalendar nicht installiert. Bitte: pip install icalendar")
+    if not _gcal_url:
+        raise RuntimeError("Kein iCal-URL konfiguriert")
+
+    start_str, end_str = week_key_to_dates(week_key)
+    week_start = datetime.strptime(start_str, '%Y-%m-%d').date()
+    week_end   = datetime.strptime(end_str,   '%Y-%m-%d').date()
+
+    resp = requests.get(_gcal_url, timeout=15)
+    resp.raise_for_status()
+
+    from datetime import date as date_type
+    cal    = ICal.from_ical(resp.content)
+    events = []
+
+    for comp in cal.walk():
+        if comp.name != 'VEVENT':
+            continue
+        if comp.get('RRULE'):          # Wiederkehrende Termine – vorerst überspringen
+            continue
+
+        dtstart = comp.get('DTSTART')
+        dtend   = comp.get('DTEND')
+        summary = str(comp.get('SUMMARY', 'Ohne Titel'))
+
+        if not dtstart:
+            continue
+
+        dt = dtstart.dt
+
+        # Ganztägige Termine (date, kein datetime)
+        if isinstance(dt, date_type) and not isinstance(dt, datetime):
+            if week_start <= dt <= week_end:
+                events.append({'date': dt.strftime('%Y-%m-%d'),
+                               'title': summary, 'start': '00:00',
+                               'end': '23:59', 'allDay': True})
+            continue
+
+        # Datum/Uhrzeit mit Zeitzone → Berliner Ortszeit
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(_BERLIN).replace(tzinfo=None)
+
+        if not (week_start <= dt.date() <= week_end):
+            continue
+
+        if dtend:
+            end_dt = dtend.dt
+            if isinstance(end_dt, datetime) and end_dt.tzinfo is not None:
+                end_dt = end_dt.astimezone(_BERLIN).replace(tzinfo=None)
+        else:
+            end_dt = dt + timedelta(hours=1)
+
+        end_str_fmt = end_dt.strftime('%H:%M') if isinstance(end_dt, datetime) else '23:59'
+        events.append({'date': dt.strftime('%Y-%m-%d'), 'title': summary,
+                       'start': dt.strftime('%H:%M'), 'end': end_str_fmt,
+                       'allDay': False})
+
+    return events
 
 
 _server_ref = None
@@ -240,6 +354,7 @@ def main():
     print("=" * 52)
 
     global _server_ref
+    _load_gcal_config()
     try:
         server = HTTPServer(("localhost", PORT), ProxyHandler)
     except OSError:

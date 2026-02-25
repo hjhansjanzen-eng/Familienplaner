@@ -1384,6 +1384,21 @@
         .appt-time-row { display: flex; gap: 10px; align-items: center; }
         .appt-time-row select { flex: 1; }
 
+        /* ── GOOGLE CALENDAR ── */
+        .gcal-panel {
+            background: var(--white); border-radius: var(--r); padding: 16px;
+            margin-bottom: 14px; box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-lt);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .gcal-hint { font-size: .8rem; color: var(--text-3); line-height: 1.55; margin: 0; }
+        .gcal-badge {
+            display: inline-block; font-size: .58rem; font-weight: 800;
+            background: #1a73e8; color: #fff; border-radius: 3px;
+            padding: 1px 3px; line-height: 1.3; vertical-align: middle;
+            margin-left: 3px; flex-shrink: 0;
+        }
+
         /* ── SCHULMANAGER INTEGRATION ── */
         .sm-bar {
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -1471,7 +1486,25 @@
     <section id="tab-sched" style="display:none">
         <div class="sec-head">
             <h2 class="sec-title">Terminplan</h2>
+            <button class="btn btn-outline btn-sm" onclick="toggleGcalPanel()">📅 Google Kalender</button>
         </div>
+
+        <!-- Google Calendar Panel -->
+        <div class="gcal-panel" id="gcal-panel" style="display:none">
+            <div style="font-weight:700;font-size:.95rem">Google Kalender synchronisieren</div>
+            <p class="gcal-hint">Den <strong>iCal-Link</strong> aus Google Kalender einfügen:<br>
+                Einstellungen → [Kalender auswählen] → <em>„Privatadresse im iCal-Format"</em></p>
+            <input type="url" id="gcal-url-inp" class="sm-inp"
+                   placeholder="https://calendar.google.com/calendar/ical/…"
+                   autocomplete="off">
+            <p id="gcal-error" style="color:var(--red);font-size:.8rem;display:none;margin:0"></p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="gcalSync()">Jetzt synchronisieren</button>
+                <button class="btn btn-ghost btn-sm" onclick="toggleGcalPanel()">Schließen</button>
+                <span id="gcal-status-info" class="gcal-hint"></span>
+            </div>
+        </div>
+
         <div class="week-nav">
             <button class="btn btn-outline btn-sm" onclick="shiftSchedWeek(-1)">&#8592; Vorwoche</button>
             <div class="week-label" id="sched-week-label"></div>
@@ -4320,8 +4353,8 @@ function renderSchedWeek() {
             const height = Math.max((slotIdx(a.end) - slotIdx(a.start)) * ROW_H, ROW_H);
             const colW   = 100 / a._total;
             const left   = a._col * colW;
-            const bg     = firstP ? firstP.bg    : '#f0f0f0';
-            const color  = firstP ? firstP.color : '#555';
+            const bg     = a.gcal ? '#e8f0fe' : (firstP ? firstP.bg    : '#f0f0f0');
+            const color  = a.gcal ? '#1a73e8' : (firstP ? firstP.color : '#555');
             const pills  = persons.map(name => {
                 const p = SCHED_PERSONS.find(x => x.name === name);
                 return '<span class="saa-person-pill" style="background:' + (p?p.bg:'#eee') + ';color:' + (p?p.color:'#999') + '">' + h(name) + '</span>';
@@ -4331,7 +4364,7 @@ function renderSchedWeek() {
                 + ' onmouseenter="showApptTooltip(event,\'' + d.key + '\',\'' + a.id + '\')"'
                 + ' onmouseleave="hideApptTooltip()"'
                 + ' style="top:' + top + 'px;height:' + height + 'px;left:' + left.toFixed(1) + '%;width:calc(' + colW.toFixed(1) + '% - 2px);background:' + bg + ';color:' + color + ';border-left-color:' + color + '">'
-                + '<span class="saa-title">' + h(a.title) + '</span>'
+                + '<span class="saa-title">' + h(a.title) + (a.gcal ? '<span class="gcal-badge">G</span>' : '') + '</span>'
                 + '<div class="saa-dots">' + pills + '</div></div>';
         });
         daywrappers += '</div>';  // sched-day-col
@@ -4512,6 +4545,79 @@ function showApptTooltip(e, dayKey, id) {
 
 function hideApptTooltip() {
     document.getElementById('sched-tooltip').classList.remove('visible');
+}
+
+// ── GOOGLE CALENDAR SYNC ──
+const LS_GCAL_URL = 'wp_gcal_url_v1';
+
+function toggleGcalPanel() {
+    const panel = document.getElementById('gcal-panel');
+    const open  = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : '';
+    if (!open) {
+        document.getElementById('gcal-url-inp').value = localStorage.getItem(LS_GCAL_URL) || '';
+        document.getElementById('gcal-error').style.display = 'none';
+        document.getElementById('gcal-status-info').textContent = '';
+    }
+}
+
+async function gcalSync() {
+    const url   = document.getElementById('gcal-url-inp').value.trim();
+    const errEl = document.getElementById('gcal-error');
+    const infoEl= document.getElementById('gcal-status-info');
+    errEl.style.display = 'none'; infoEl.textContent = '';
+    if (!url) { errEl.textContent = 'Bitte iCal-Link eingeben.'; errEl.style.display = ''; return; }
+
+    const btn = document.querySelector('#gcal-panel .btn-primary');
+    btn.textContent = 'Wird geladen …'; btn.disabled = true;
+    try {
+        // URL im Proxy speichern
+        const sr = await fetch(SM_PROXY + '/gcal-url', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({url}), signal: AbortSignal.timeout(5000)
+        });
+        if (!sr.ok) { const d = await sr.json(); throw new Error(d.error || 'Speichern fehlgeschlagen'); }
+        localStorage.setItem(LS_GCAL_URL, url);
+
+        // Aktuelle Woche synchronisieren
+        const count = await gcalFetchWeek(schedWeek);
+        infoEl.textContent = count + ' Termine importiert ✓';
+    } catch(e) {
+        errEl.textContent = e.name === 'TimeoutError'
+            ? 'Proxy nicht erreichbar. Ist schulmanager_proxy.py gestartet?'
+            : 'Fehler: ' + e.message;
+        errEl.style.display = '';
+    } finally {
+        btn.textContent = 'Jetzt synchronisieren'; btn.disabled = false;
+    }
+}
+
+async function gcalFetchWeek(week) {
+    const r = await fetch(SM_PROXY + '/gcal-sync?week=' + week, {signal: AbortSignal.timeout(15000)});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Unbekannter Fehler');
+
+    // Alte gcal-Termine dieser Woche entfernen
+    if (scheduleData[week]) {
+        Object.keys(scheduleData[week]).forEach(dk => {
+            scheduleData[week][dk] = (scheduleData[week][dk] || []).filter(a => !a.gcal);
+        });
+    }
+    // Neue Termine einfügen
+    d.events.forEach(ev => {
+        if (ev.allDay) return; // Ganztägige Termine überspringen
+        const dateObj = new Date(ev.date + 'T00:00:00');
+        const dayKey  = ['sun','mon','tue','wed','thu','fri','sat'][dateObj.getDay()];
+        if (!scheduleData[week]) scheduleData[week] = {};
+        if (!scheduleData[week][dayKey]) scheduleData[week][dayKey] = [];
+        scheduleData[week][dayKey].push({
+            id: 'gcal-' + uid(), title: ev.title,
+            start: ev.start, end: ev.end, persons: [], gcal: true
+        });
+    });
+    saveSchedState();
+    renderSchedWeek();
+    return d.count;
 }
 
 // ── SCHULMANAGER INTEGRATION ──
