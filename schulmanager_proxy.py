@@ -54,7 +54,7 @@ _user     = None
 _student  = None
 
 
-def sm_login(username: str, password: str) -> dict:
+def sm_login(username: str, password: str, institution_id=None) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
     global _token, _user, _student
     last_err = None
@@ -64,7 +64,7 @@ def sm_login(username: str, password: str) -> dict:
                 "emailOrUsername": username,
                 "password":        password,
                 "mobileApp":       False,
-                "institutionId":   None
+                "institutionId":   institution_id
             }, timeout=10)
             break  # Verbindung erfolgreich
         except (requests.exceptions.ConnectionError,
@@ -77,6 +77,9 @@ def sm_login(username: str, password: str) -> dict:
     resp.raise_for_status()
     data = resp.json()
     logging.debug(f"Login-Antwort: {data}")
+    # Mehrere Konten – Schulauswahl nötig
+    if "multipleAccounts" in data:
+        return {"multipleAccounts": data["multipleAccounts"]}
     if "jwt" not in data:
         msg = data.get("message") or data.get("error") or data.get("msg") or str(data)
         raise ValueError(f"Anmeldung fehlgeschlagen: {msg}")
@@ -252,12 +255,16 @@ class ProxyHandler(BaseHTTPRequestHandler):
         body   = json.loads(self.rfile.read(length)) if length else {}
 
         if parsed.path == "/login":
-            username = body.get("username", "").strip()
-            password = body.get("password", "")
+            username       = body.get("username", "").strip()
+            password       = body.get("password", "")
+            institution_id = body.get("institutionId", None)
             if not username or not password:
                 self._send(400, {"error": "Benutzername und Passwort erforderlich"}); return
             try:
-                data = sm_login(username, password)
+                data = sm_login(username, password, institution_id)
+                if "multipleAccounts" in data:
+                    self._send(200, {"multipleAccounts": data["multipleAccounts"]})
+                    return
                 self._send(200, {
                     "ok":      True,
                     "student": _student,

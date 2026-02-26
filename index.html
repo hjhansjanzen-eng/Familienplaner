@@ -1552,8 +1552,13 @@
             <input type="password" id="sm-password" class="sm-inp" placeholder="Passwort" autocomplete="current-password"
                    onkeydown="if(event.key==='Enter')smLogin()">
             <p id="sm-error" style="color:var(--red);font-size:.8rem;display:none;margin:0"></p>
+            <!-- Schulauswahl (erscheint wenn mehrere Konten vorhanden) -->
+            <div id="sm-school-picker" style="display:none">
+                <p style="font-size:.82rem;margin:0 0 6px;color:var(--text-2)">Bitte Schule auswählen:</p>
+                <div id="sm-school-list" style="display:flex;flex-direction:column;gap:6px"></div>
+            </div>
             <div style="display:flex;gap:8px">
-                <button class="btn btn-primary btn-sm" onclick="smLogin()">Anmelden</button>
+                <button class="btn btn-primary btn-sm" id="sm-login-btn" onclick="smLogin()">Anmelden</button>
                 <button class="btn btn-ghost btn-sm" onclick="closeSmLogin()">Abbrechen</button>
             </div>
         </div>
@@ -4720,9 +4725,13 @@ function openSmLogin() {
 function closeSmLogin() {
     document.getElementById('sm-login-form').style.display = 'none';
     document.getElementById('sm-password').value = '';
+    document.getElementById('sm-school-picker').style.display = 'none';
+    document.getElementById('sm-username').style.display = '';
+    document.getElementById('sm-password').style.display = '';
+    document.getElementById('sm-login-btn').style.display = '';
 }
 
-async function smLogin() {
+async function smLogin(institutionId = null) {
     const username = document.getElementById('sm-username').value.trim();
     const password = document.getElementById('sm-password').value;
     const errEl = document.getElementById('sm-error');
@@ -4731,19 +4740,32 @@ async function smLogin() {
         errEl.textContent = 'Bitte Benutzername und Passwort eingeben.';
         errEl.style.display = ''; return;
     }
-    const btn = document.querySelector('#sm-login-form .btn-primary');
+    const btn = document.getElementById('sm-login-btn');
     btn.textContent = 'Wird angemeldet …'; btn.disabled = true;
     try {
         const r = await fetch(SM_PROXY + '/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username, password, institutionId }),
             signal: AbortSignal.timeout(12000)
         });
         const d = await r.json();
         if (!r.ok) {
             errEl.textContent = d.error || 'Anmeldung fehlgeschlagen.';
             errEl.style.display = ''; return;
+        }
+        if (d.multipleAccounts) {
+            // Schulauswahl anzeigen
+            const picker = document.getElementById('sm-school-picker');
+            const list   = document.getElementById('sm-school-list');
+            list.innerHTML = d.multipleAccounts.map(a =>
+                `<button class="btn btn-outline btn-sm" onclick="smLogin(${a.id})">${h(a.label)}</button>`
+            ).join('');
+            picker.style.display = '';
+            document.getElementById('sm-username').style.display = 'none';
+            document.getElementById('sm-password').style.display = 'none';
+            btn.style.display = 'none';
+            return;
         }
         smSetConnected(d.user, d.student);
     } catch (e) {
