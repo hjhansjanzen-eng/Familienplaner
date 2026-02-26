@@ -79,12 +79,16 @@ def _post_login(payload: dict) -> dict:
 def sm_login(username: str, password: str, institution_id=None) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
     global _token, _user, _student
-    data = _post_login({
-        "emailOrUsername": username,
-        "password":        password,
-        "mobileApp":       False,
-        "institutionId":   institution_id
-    })
+    if institution_id is not None:
+        # Zweiter Schritt: nur Schulauswahl, kein Passwort erneut senden
+        data = _post_login({"institutionId": institution_id})
+    else:
+        data = _post_login({
+            "emailOrUsername": username,
+            "password":        password,
+            "mobileApp":       False,
+            "institutionId":   None
+        })
     # Mehrere Konten – Schulauswahl nötig
     if "multipleAccounts" in data:
         return {"multipleAccounts": data["multipleAccounts"]}
