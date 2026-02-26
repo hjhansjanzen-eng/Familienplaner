@@ -47,12 +47,23 @@ _student  = None
 def sm_login(username: str, password: str) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
     global _token, _user, _student
-    resp = requests.post(LOGIN_URL, json={
-        "emailOrUsername": username,
-        "password":        password,
-        "mobileApp":       False,
-        "institutionId":   None
-    }, timeout=10)
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = requests.post(LOGIN_URL, json={
+                "emailOrUsername": username,
+                "password":        password,
+                "mobileApp":       False,
+                "institutionId":   None
+            }, timeout=10)
+            break  # Verbindung erfolgreich
+        except (requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout) as e:
+            last_err = e
+            if attempt < 2:
+                time.sleep(2)
+    else:
+        raise last_err
     resp.raise_for_status()
     data    = resp.json()
     _token   = data["jwt"]
