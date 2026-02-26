@@ -4719,7 +4719,22 @@ function smSetConnected(user, student) {
 function openSmLogin() {
     document.getElementById('sm-login-form').style.display = '';
     document.getElementById('sm-error').style.display = 'none';
-    setTimeout(() => document.getElementById('sm-username').focus(), 60);
+    // Gespeicherte Zugangsdaten eintragen
+    const saved = JSON.parse(localStorage.getItem('wp_sm_creds') || 'null');
+    if (saved) {
+        document.getElementById('sm-username').value = saved.username || '';
+        document.getElementById('sm-password').value = saved.password || '';
+        // Direkt anmelden wenn alles gespeichert ist
+        if (saved.username && saved.password) {
+            smLogin(saved.institutionId || null);
+            return;
+        }
+    }
+    setTimeout(() => {
+        const u = document.getElementById('sm-username');
+        const p = document.getElementById('sm-password');
+        (u.value ? p : u).focus();
+    }, 60);
 }
 
 function closeSmLogin() {
@@ -4767,6 +4782,12 @@ async function smLogin(institutionId = null) {
             btn.style.display = 'none';
             return;
         }
+        // Zugangsdaten für nächstes Mal speichern
+        localStorage.setItem('wp_sm_creds', JSON.stringify({
+            username: document.getElementById('sm-username').value.trim(),
+            password: document.getElementById('sm-password').value,
+            institutionId: institutionId
+        }));
         smSetConnected(d.user, d.student);
     } catch (e) {
         errEl.textContent = e.name === 'TimeoutError'
@@ -4779,6 +4800,7 @@ async function smLogin(institutionId = null) {
 }
 
 function smLogout() {
+    localStorage.removeItem('wp_sm_creds');
     document.getElementById('sm-loaded-info').textContent = '';
     smSetDisconnected();
 }
