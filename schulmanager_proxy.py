@@ -75,7 +75,11 @@ def sm_login(username: str, password: str) -> dict:
     else:
         raise last_err
     resp.raise_for_status()
-    data    = resp.json()
+    data = resp.json()
+    logging.debug(f"Login-Antwort: {data}")
+    if "jwt" not in data:
+        msg = data.get("message") or data.get("error") or data.get("msg") or str(data)
+        raise ValueError(f"Anmeldung fehlgeschlagen: {msg}")
     _token   = data["jwt"]
     _user    = data["user"]
     _student = data["user"].get("associatedStudent")
