@@ -9,12 +9,22 @@ Voraussetzung: pip install requests icalendar
 """
 
 import json
+import logging
+import os
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
+
+# Logging in Datei neben dem Skript
+_LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'proxy.log')
+logging.basicConfig(
+    filename=_LOG_FILE, level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s %(message)s', encoding='utf-8'
+)
 
 try:
     import requests
@@ -157,10 +167,11 @@ def _cors(handler):
 class ProxyHandler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
-        # Nur relevante Meldungen ausgeben
-        print(f"  {self.command} {self.path}  →  {args[1]}")
+        logging.info(f"{self.command} {self.path} → {args[1]}")
 
     def _send(self, code: int, data: dict):
+        if code >= 400:
+            logging.warning(f"{self.path} → {code}: {data}")
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -266,7 +277,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
                     "  → Windows-Sicherheit → Firewall → App zulassen → pythonw.exe erlauben"
                 )})
             except Exception as e:
-                self._send(500, {"error": str(e)})
+                logging.error(f"Login-Fehler: {traceback.format_exc()}")
+                self._send(500, {"error": f"{type(e).__name__}: {e}"})
 
         elif parsed.path == "/gcal-url":
             url = body.get("url", "").strip()
