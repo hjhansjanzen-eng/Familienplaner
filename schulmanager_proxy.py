@@ -81,10 +81,9 @@ def sm_login(username: str, password: str, institution_id=None) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
     global _token, _user, _student, _pending_creds
     if institution_id is not None and _pending_creds:
-        # Zweiter Schritt: vollständige Zugangsdaten + Schulauswahl + Session-Cookie
+        # Zweiter Schritt: Benutzername + Schulauswahl + Session-Cookie (kein Passwort)
         data = _post_login({
             "emailOrUsername": _pending_creds["username"],
-            "password":        _pending_creds["password"],
             "mobileApp":       False,
             "institutionId":   institution_id
         })
