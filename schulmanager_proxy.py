@@ -49,10 +49,11 @@ LOGIN_URL  = "https://login.schulmanager-online.de/api/login"
 API_URL    = "https://login.schulmanager-online.de/api/calls"
 
 # Globaler Zustand (läuft nur im lokalen Prozess)
-_token    = None
-_user     = None
-_student  = None
-_session  = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
+_token         = None
+_user          = None
+_student       = None
+_session       = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
+_pending_creds = None                 # Zugangsdaten für zweiten Login-Schritt (Schulauswahl)
 
 
 def _post_login(payload: dict) -> dict:
@@ -78,11 +79,19 @@ def _post_login(payload: dict) -> dict:
 
 def sm_login(username: str, password: str, institution_id=None) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
-    global _token, _user, _student
-    if institution_id is not None:
-        # Zweiter Schritt: nur Schulauswahl, kein Passwort erneut senden
-        data = _post_login({"institutionId": institution_id})
+    global _token, _user, _student, _pending_creds
+    if institution_id is not None and _pending_creds:
+        # Zweiter Schritt: vollständige Zugangsdaten + Schulauswahl + Session-Cookie
+        data = _post_login({
+            "emailOrUsername": _pending_creds["username"],
+            "password":        _pending_creds["password"],
+            "mobileApp":       False,
+            "institutionId":   institution_id
+        })
+        _pending_creds = None
     else:
+        # Erster Schritt: Zugangsdaten merken für evtl. Schulauswahl
+        _pending_creds = {"username": username, "password": password}
         data = _post_login({
             "emailOrUsername": username,
             "password":        password,
