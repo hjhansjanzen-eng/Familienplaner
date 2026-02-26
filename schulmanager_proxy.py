@@ -71,6 +71,7 @@ def _post_login(payload: dict) -> dict:
                 time.sleep(2)
     else:
         raise last_err
+    logging.debug(f"HTTP {resp.status_code} body: {resp.text[:500]}")
     resp.raise_for_status()
     data = resp.json()
     logging.debug(f"Login-Antwort ({payload.get('institutionId')}): {data}")
