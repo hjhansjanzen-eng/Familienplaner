@@ -191,6 +191,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 self._send(200, {"ok": True, "week": week, "data": data})
             except requests.HTTPError as e:
                 self._send(502, {"error": f"Schulmanager-Fehler: {e.response.status_code}"})
+            except (requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout):
+                self._send(503, {"error": "Schulmanager nicht erreichbar – Internetverbindung prüfen."})
             except Exception as e:
                 self._send(500, {"error": str(e)})
 
@@ -242,6 +245,15 @@ class ProxyHandler(BaseHTTPRequestHandler):
                     self._send(401, {"error": "Benutzername oder Passwort falsch"})
                 else:
                     self._send(502, {"error": f"Schulmanager-Fehler: {e.response.status_code}"})
+            except (requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout):
+                self._send(503, {"error": (
+                    "Schulmanager nicht erreichbar.\n"
+                    "Mögliche Ursachen:\n"
+                    "• Kein Internet\n"
+                    "• Windows-Firewall blockiert pythonw.exe\n"
+                    "  → Windows-Sicherheit → Firewall → App zulassen → pythonw.exe erlauben"
+                )})
             except Exception as e:
                 self._send(500, {"error": str(e)})
 
