@@ -52,21 +52,17 @@ API_URL    = "https://login.schulmanager-online.de/api/calls"
 _token    = None
 _user     = None
 _student  = None
+_session  = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
 
 
-def sm_login(username: str, password: str, institution_id=None) -> dict:
-    """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
-    global _token, _user, _student
+def _post_login(payload: dict) -> dict:
+    """Sendet einen Login-Request und gibt die geparste Antwort zurück."""
+    global _session
     last_err = None
     for attempt in range(3):
         try:
-            resp = requests.post(LOGIN_URL, json={
-                "emailOrUsername": username,
-                "password":        password,
-                "mobileApp":       False,
-                "institutionId":   institution_id
-            }, timeout=10)
-            break  # Verbindung erfolgreich
+            resp = _session.post(LOGIN_URL, json=payload, timeout=10)
+            break
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout) as e:
             last_err = e
@@ -76,7 +72,19 @@ def sm_login(username: str, password: str, institution_id=None) -> dict:
         raise last_err
     resp.raise_for_status()
     data = resp.json()
-    logging.debug(f"Login-Antwort: {data}")
+    logging.debug(f"Login-Antwort ({payload.get('institutionId')}): {data}")
+    return data
+
+
+def sm_login(username: str, password: str, institution_id=None) -> dict:
+    """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
+    global _token, _user, _student
+    data = _post_login({
+        "emailOrUsername": username,
+        "password":        password,
+        "mobileApp":       False,
+        "institutionId":   institution_id
+    })
     # Mehrere Konten – Schulauswahl nötig
     if "multipleAccounts" in data:
         return {"multipleAccounts": data["multipleAccounts"]}
