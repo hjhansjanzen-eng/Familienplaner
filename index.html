@@ -1402,8 +1402,10 @@
         .sp-cell:hover { background: var(--green-faint, #f0faf3); }
         .sp-cell.has-val {
             border-color: var(--sp-color, var(--border)); background: var(--sp-bg, var(--white));
+        }
+        .sp-cell-inner {
             display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 5px;
-            padding: 0 6px;
+            padding: 0 6px; height: 100%; width: 100%; box-sizing: border-box;
         }
         .sp-subj-icon { font-size: 1.6rem; line-height: 1; pointer-events: none; flex-shrink: 0; }
         .sp-cell-text {
@@ -4329,8 +4331,10 @@ function renderStundenplanTab() {
             html += '<td class="sp-cell' + (hasVal ? ' has-val' : '') + '"'
                 + (hasVal ? ' style="--sp-color:' + color + ';--sp-bg:' + bg + '"' : '')
                 + ' onclick="startEditSpCell(\'' + dk + '\',' + pi + ')">'
+                + '<div class="sp-cell-inner">'
                 + '<span class="sp-subj-icon" id="sp-i-' + dk + '-' + pi + '">' + icon + '</span>'
                 + '<span class="sp-cell-text" id="sp-t-' + dk + '-' + pi + '">' + h(val) + '</span>'
+                + '</div>'
                 + '</td>';
         });
         html += '</tr>';
@@ -4346,8 +4350,9 @@ function selectSpPerson(name) {
 
 function startEditSpCell(dayKey, pi) {
     const textEl = document.getElementById('sp-t-' + dayKey + '-' + pi);
-    if (!textEl || textEl.style.display === 'none') return;
-    const td = textEl.parentElement;
+    if (!textEl) return;
+    const td = textEl.closest('td');
+    if (td.querySelector('input')) return; // Zelle wird bereits bearbeitet
     const currentVal = ((stundenplanData[stundenplanPerson] || {})[dayKey] || [])[pi] || '';
     const p = SCHED_PERSONS.find(x => x.name === stundenplanPerson);
     const input = document.createElement('input');
@@ -4355,7 +4360,7 @@ function startEditSpCell(dayKey, pi) {
     input.value = currentVal;
     input.placeholder = 'Fach…';
     if (p) input.style.color = p.color;
-    textEl.style.display = 'none';
+    textEl.closest('.sp-cell-inner').style.display = 'none';
     td.appendChild(input);
     input.focus(); input.select();
     const save = () => {
