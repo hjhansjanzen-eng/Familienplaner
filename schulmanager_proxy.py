@@ -51,11 +51,24 @@ API_URL    = "https://login.schulmanager-online.de/api/calls"
 
 # Globaler Zustand (läuft nur im lokalen Prozess)
 _token         = None
+_token_exp     = None                 # Unix-Timestamp: Ablaufzeit des JWT
 _user          = None
 _student       = None
 _all_students  = []                   # Alle verfügbaren Schüler
 _session       = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
 _pending_creds = None                 # Zugangsdaten für zweiten Login-Schritt (Schulauswahl)
+
+
+def _jwt_exp(token: str) -> float | None:
+    """Liest den 'exp'-Claim aus einem JWT (ohne Verifikation)."""
+    try:
+        import base64
+        payload = token.split('.')[1]
+        payload += '=' * (-len(payload) % 4)   # Padding ergänzen
+        data = json.loads(base64.urlsafe_b64decode(payload))
+        return float(data['exp'])
+    except Exception:
+        return None
 
 
 def _compute_hash(password: str, salt: str) -> str:
@@ -117,7 +130,7 @@ def _post_login(payload: dict) -> dict:
 
 def sm_login(username: str, password: str, institution_id=None, student_id=None) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
-    global _token, _user, _student, _all_students, _pending_creds, _session
+    global _token, _token_exp, _user, _student, _all_students, _pending_creds, _session
 
     if institution_id is not None and _pending_creds:
         # Zweiter Schritt: account.id wird als userId gesendet, institutionId bleibt null
@@ -151,7 +164,9 @@ def sm_login(username: str, password: str, institution_id=None, student_id=None)
     if "jwt" not in data:
         msg = data.get("message") or data.get("error") or data.get("msg") or str(data)
         raise ValueError(f"Anmeldung fehlgeschlagen: {msg}")
-    _token   = data["jwt"]
+    _token     = data["jwt"]
+    _token_exp = _jwt_exp(_token)
+    logging.debug(f"Token-Ablauf: {_token_exp} ({datetime.fromtimestamp(_token_exp) if _token_exp else 'unbekannt'})")
     _user    = data["user"]
     _student = data["user"].get("associatedStudent")
 
@@ -296,8 +311,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
         params = parse_qs(parsed.query)
 
         if parsed.path == "/status":
+            token_valid = _token is not None and (
+                _token_exp is None or time.time() < _token_exp)
             self._send(200, {
-                "loggedIn": _token is not None,
+                "loggedIn": token_valid,
                 "student":  _student,
                 "user": {
                     "firstname": _user.get("firstname"),

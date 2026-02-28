@@ -4890,7 +4890,7 @@ async function smLogin(institutionId = null, studentId = null) {
             // Immer automatisch auswählen: gespeicherte ID oder erste Schule in der Liste
             const savedCreds = JSON.parse(localStorage.getItem('wp_sm_creds') || 'null');
             const id = (savedCreds && savedCreds.institutionId) || d.multipleAccounts[0].id;
-            smLogin(id);
+            await smLogin(id);
             return;
         }
         // Zugangsdaten für nächstes Mal speichern
