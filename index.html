@@ -1318,10 +1318,11 @@
         .sched-week-scroll { overflow: hidden; }
         /* Ein Flex-Row: Zeitspalte + 7 Tag-Spalten */
         .sched-week-grid { display: flex; min-width: 420px; gap: 4px; padding: 0 6px 6px; align-items: flex-start; }
-        /* Zeitschieber */
-        .sched-time-slider-wrap { display: flex; align-items: center; gap: 8px; padding: 4px 10px 2px; }
-        .sched-slider-lbl { font-size: 11px; color: var(--text-4); white-space: nowrap; min-width: 72px; font-variant-numeric: tabular-nums; }
-        .sched-time-slider-wrap input[type=range] { flex: 1; cursor: pointer; accent-color: var(--s1, #34c759); }
+        /* Zeitschieber (links vom Kalender) */
+        .sched-layout { display: flex; gap: 4px; align-items: flex-start; }
+        .sched-slider-col { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+        .sched-vslider { writing-mode: vertical-lr; cursor: pointer; accent-color: var(--s1, #34c759); width: 20px; }
+        .sched-slider-lbl { font-size: 10px; color: var(--text-4); font-variant-numeric: tabular-nums; }
         .sched-time-col { width: 38px; flex-shrink: 0; display: flex; flex-direction: column; }
         .sched-time-inner { position: relative; flex: 1; }
         .sched-hour-lbl {
@@ -1603,12 +1604,15 @@
             <button class="btn btn-outline btn-sm" onclick="shiftSchedWeek(1)">Nächste Woche &#8594;</button>
             <button class="btn btn-sm btn-today" id="sched-btn-today" onclick="goToSchedToday()">Heute</button>
         </div>
-        <div class="sched-week-outer" id="sched-week-outer">
-            <!-- rendered by renderSchedWeek() -->
-        </div>
-        <div class="sched-time-slider-wrap">
-            <span id="sched-slider-lbl" class="sched-slider-lbl">07:00–22:00</span>
-            <input type="range" id="sched-time-slider" min="0" max="9" step="0.5" value="7" oninput="schedSetViewStart(this.value)">
+        <div class="sched-layout">
+            <div class="sched-slider-col">
+                <input type="range" id="sched-time-slider" class="sched-vslider"
+                       min="0" max="9" step="0.5" value="7" oninput="schedSetViewStart(this.value)">
+                <span id="sched-slider-lbl" class="sched-slider-lbl">07:00</span>
+            </div>
+            <div class="sched-week-outer" id="sched-week-outer">
+                <!-- rendered by renderSchedWeek() -->
+            </div>
         </div>
         <div class="sched-add-fab">
             <button class="sched-fab-btn" onclick="openApptForm(null,null)">
@@ -4519,12 +4523,14 @@ function schedApplyViewStart() {
     const grid = document.getElementById('sched-week-grid');
     if (grid) grid.style.transform = 'translateY(-' + (schedViewStart * 2 * ROW_H) + 'px)';
     const slider = document.getElementById('sched-time-slider');
-    if (slider) slider.value = schedViewStart;
+    if (slider) {
+        slider.value = schedViewStart;
+        slider.style.height = (SCHED_VISIBLE * ROW_H) + 'px';
+    }
     const lbl = document.getElementById('sched-slider-lbl');
     if (lbl) {
-        const endH = schedViewStart + 15;
         const fmt = v => String(Math.floor(v)).padStart(2,'0') + ':' + (v % 1 ? '30' : '00');
-        lbl.textContent = fmt(schedViewStart) + '–' + fmt(endH);
+        lbl.textContent = fmt(schedViewStart);
     }
 }
 
