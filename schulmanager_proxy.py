@@ -447,7 +447,12 @@ class ProxyHandler(BaseHTTPRequestHandler):
             if not nas_url:
                 self._send(400, {"error": "url fehlt"}); return
             try:
-                r = requests.get(nas_url, params=nas_params, timeout=15)
+                # Frische Session pro Anfrage + kein Redirect-Follow
+                # (DSM leitet bei gepoolten Verbindungen manchmal zur Web-UI weiter)
+                with requests.Session() as s:
+                    r = s.get(nas_url, params=nas_params, timeout=15,
+                              allow_redirects=False)
+                logging.debug(f"NAS {r.status_code} {r.url}")
                 try:
                     self._send(200, r.json())
                 except Exception:
