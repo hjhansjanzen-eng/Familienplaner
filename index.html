@@ -1309,7 +1309,7 @@
 
         /* ══ TERMINPLAN ══ */
         /* Week grid outer */
-        .sched-week-outer { border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); background: var(--white); }
+        .sched-week-outer { border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); background: var(--white); flex: 1; min-width: 0; }
         /* Feste Header-Zeile über dem Scrollbereich */
         .sched-week-header { display: flex; gap: 4px; padding: 6px 6px 0; min-width: 420px; overflow: hidden; }
         .sched-time-col-hdr { width: 38px; flex-shrink: 0; }
@@ -4350,8 +4350,8 @@ function calcSchedRowH() {
     if (!outer) return 44;
     const rect = outer.getBoundingClientRect();
     if (rect.top === 0 && rect.height === 0) return ROW_H; // element hidden
-    // subtract space for FAB button (~68px) + main bottom padding (80px) + slack (12px) + slider (~28px)
-    const availH = window.innerHeight - rect.top - 188;
+    // subtract space for FAB button (~68px) + main bottom padding (80px) + slack (12px)
+    const availH = window.innerHeight - rect.top - 160;
     return Math.max(18, Math.floor(availH / SCHED_VISIBLE));
 }
 
