@@ -1524,7 +1524,9 @@
             transition: border-color .15s;
         }
         .sm-inp:focus { border-color: var(--green); }
-        .sm-load-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+        .sm-load-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .sp-header-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+        .sp-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .sm-select {
             padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border);
             font-family: inherit; font-size: .85rem; background: var(--white);
@@ -1641,7 +1643,6 @@
                 <span id="sm-status-text">Schulmanager: wird gesucht …</span>
             </div>
             <button class="btn btn-outline btn-sm" id="sm-connect-btn" onclick="openSmLogin()" style="display:none">Anmelden</button>
-            <button class="btn btn-ghost btn-sm" id="sm-logout-btn" onclick="smLogout()" style="display:none">Abmelden</button>
         </div>
 
         <!-- Login-Formular -->
@@ -1663,13 +1664,18 @@
             </div>
         </div>
 
-        <!-- Stundenplan laden (nach Login) -->
-        <div class="sm-load-bar" id="sm-load-bar" style="display:none">
-            <button class="btn btn-primary btn-sm" onclick="smLoadStundenplan()">Aktuelle Woche laden</button>
-            <span class="sm-hint" id="sm-loaded-info"></span>
+        <!-- Personenauswahl + Aktionen in einer Zeile -->
+        <div class="sp-header-row">
+            <div class="sp-person-sel" id="sp-person-sel"></div>
+            <div class="sp-header-actions">
+                <div class="sm-load-bar" id="sm-load-bar" style="display:none">
+                    <span class="sm-hint" id="sm-loaded-info"></span>
+                    <button class="btn btn-primary btn-sm" onclick="smLoadStundenplan()">Aktuelle Woche laden</button>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="sm-logout-btn" onclick="smLogout()" style="display:none">Abmelden</button>
+            </div>
         </div>
 
-        <div class="sp-person-sel" id="sp-person-sel"></div>
         <div id="sp-grid-outer"></div>
     </section>
 
