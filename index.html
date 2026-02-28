@@ -1402,12 +1402,13 @@
         .sp-cell:hover { background: var(--green-faint, #f0faf3); }
         .sp-cell.has-val {
             border-color: var(--sp-color, var(--border)); background: var(--sp-bg, var(--white));
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+            display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 5px;
+            padding: 0 6px;
         }
-        .sp-subj-icon { font-size: 1.1rem; line-height: 1; pointer-events: none; }
+        .sp-subj-icon { font-size: 1.6rem; line-height: 1; pointer-events: none; flex-shrink: 0; }
         .sp-cell-text {
-            display: block; text-align: center; font-size: .75rem; font-weight: 600;
-            padding: 0 4px; line-height: 1.25; color: var(--sp-color, var(--text-1));
+            display: block; text-align: left; font-size: .75rem; font-weight: 600;
+            line-height: 1.25; color: var(--sp-color, var(--text-1));
         }
         .sp-cell input {
             width: 100%; height: 62px; border: none; background: transparent;
