@@ -808,6 +808,86 @@
         .key-panel p  { font-size: .8rem; color: var(--text-3); margin-bottom: 18px; line-height: 1.6; }
         .key-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
 
+        /* ── SETTINGS PANEL ── */
+        .settings-btn {
+            background: rgba(142,142,147,.12);
+            border: none;
+            color: var(--text-2);
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-family: inherit;
+            font-size: .76rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background .14s;
+            white-space: nowrap;
+        }
+        .settings-btn:hover { background: rgba(142,142,147,.22); }
+        .proxy-hdr-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--text-4);
+            flex-shrink: 0;
+            transition: background .25s;
+        }
+        .proxy-hdr-dot.online { background: var(--green); }
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .settings-overlay.open { display: flex; }
+        .settings-panel {
+            background: var(--white);
+            border-radius: 22px;
+            padding: 26px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: var(--shadow-xl);
+        }
+        .settings-panel h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 18px; letter-spacing: -.2px; }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .settings-row:last-of-type { border-bottom: none; }
+        .settings-label { font-size: .85rem; color: var(--text-2); }
+        .toggle-wrap { position: relative; width: 40px; height: 24px; flex-shrink: 0; }
+        .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: var(--text-4);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background .2s;
+        }
+        .toggle-wrap input:checked + .toggle-track { background: var(--green); }
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            left: 3px; top: 3px;
+            width: 18px; height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform .2s;
+        }
+        .toggle-wrap input:checked + .toggle-track::after { transform: translateX(16px); }
+
         /* ── MEAL THUMBNAIL ── */
         .meal-thumb {
             width: 42px;
@@ -1447,7 +1527,12 @@
         <button class="app-tab" id="app-tab-sched" onclick="switchTab('sched')">Terminplan</button>
         <button class="app-tab" id="app-tab-stundenplan" onclick="switchTab('stundenplan')">Stundenplan</button>
     </nav>
-    <div class="header-right">
+    <div class="header-right" style="gap:12px">
+        <div style="display:flex;align-items:center;gap:5px">
+            <span class="proxy-hdr-dot" id="proxy-hdr-dot"></span>
+            <span id="proxy-hdr-text" style="font-size:.72rem;color:var(--text-4)">Proxy …</span>
+        </div>
+        <button class="settings-btn" onclick="openSettingsPanel()">⚙ Einstellungen</button>
         <button class="key-btn" id="key-btn" onclick="openKeyPanel()" title="API-Key für automatische Zutaten">
             <span class="key-dot" id="key-dot"></span>API-Key
         </button>
@@ -1487,13 +1572,6 @@
         <div class="sec-head">
             <h2 class="sec-title">Terminplan</h2>
             <button class="btn btn-outline btn-sm" onclick="toggleGcalPanel()">📅 Google Kalender</button>
-        </div>
-
-        <!-- Proxy Status -->
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-            <span class="sm-dot" id="proxy-dot" style="width:6px;height:6px"></span>
-            <span id="proxy-status-text" style="font-size:.72rem;color:var(--text-4)">Proxy wird gesucht …</span>
-            <button id="proxy-stop-btn" onclick="proxyStop()" style="display:none;font-size:.68rem;color:var(--text-4);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline">beenden</button>
         </div>
 
         <!-- Google Calendar Panel -->
@@ -1823,6 +1901,32 @@
 </div>
 
 <!-- API Key Panel -->
+<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettingsPanel()">
+    <div class="settings-panel">
+        <h3>Einstellungen</h3>
+        <div class="settings-row">
+            <div>
+                <div style="font-size:.85rem;font-weight:600;color:var(--text-2)">Proxy-Status</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                    <span class="sm-dot" id="proxy-dot" style="width:6px;height:6px"></span>
+                    <span id="proxy-status-text" style="font-size:.72rem;color:var(--text-4)">Proxy wird gesucht …</span>
+                </div>
+            </div>
+            <button id="proxy-stop-btn" class="btn btn-ghost btn-sm" onclick="proxyStop()" style="display:none">Beenden</button>
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">Proxy nach Laden automatisch beenden</span>
+            <label class="toggle-wrap">
+                <input type="checkbox" id="proxy-autostop-toggle" onchange="saveProxyAutoStop(this.checked)">
+                <span class="toggle-track"></span>
+            </label>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px">
+            <button class="btn btn-outline" onclick="closeSettingsPanel()">Schließen</button>
+        </div>
+    </div>
+</div>
+
 <div class="key-overlay" id="key-overlay" onclick="if(event.target===this)closeKeyPanel()">
     <div class="key-panel">
         <h3>Groq API-Key</h3>
@@ -4121,6 +4225,7 @@ const SP_DAYS = ['mon','tue','wed','thu','fri'];
 const SP_DAY_LABELS = { mon:'Mo', tue:'Di', wed:'Mi', thu:'Do', fri:'Fr' };
 
 let stundenplanData = {}, stundenplanPerson = 'Jonas';
+let smStudents = [];  // Alle verfügbaren Schulmanager-Schüler mit IDs
 
 function loadStundenplan() {
     try { stundenplanData = JSON.parse(localStorage.getItem('wp_stundenplan_v1')) || {}; } catch(e) { stundenplanData = {}; }
@@ -4574,18 +4679,33 @@ function proxySetOnline() {
     document.getElementById('proxy-dot').className = 'sm-dot connected';
     document.getElementById('proxy-status-text').textContent = 'Proxy läuft';
     document.getElementById('proxy-stop-btn').style.display = '';
+    document.getElementById('proxy-hdr-dot').className = 'proxy-hdr-dot online';
+    document.getElementById('proxy-hdr-text').textContent = 'Proxy aktiv';
 }
 
 function proxySetOffline() {
     document.getElementById('proxy-dot').className = 'sm-dot';
     document.getElementById('proxy-status-text').textContent = 'Proxy nicht aktiv';
     document.getElementById('proxy-stop-btn').style.display = 'none';
+    document.getElementById('proxy-hdr-dot').className = 'proxy-hdr-dot';
+    document.getElementById('proxy-hdr-text').textContent = 'Proxy inaktiv';
 }
 
 async function proxyStop() {
     try { await fetch(SM_PROXY + '/shutdown').catch(() => {}); } catch {}
     setTimeout(checkProxyStatus, 600);
 }
+
+function openSettingsPanel() {
+    document.getElementById('proxy-autostop-toggle').checked = getProxyAutoStop();
+    document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettingsPanel() {
+    document.getElementById('settings-overlay').classList.remove('open');
+}
+const LS_PROXY_AUTOSTOP = 'wp_proxy_autostop';
+function getProxyAutoStop() { return localStorage.getItem(LS_PROXY_AUTOSTOP) === 'true'; }
+function saveProxyAutoStop(val) { localStorage.setItem(LS_PROXY_AUTOSTOP, val ? 'true' : 'false'); }
 
 // ── GOOGLE CALENDAR SYNC ──
 const LS_GCAL_URL = 'wp_gcal_url_v1';
@@ -4702,8 +4822,9 @@ function smSetDisconnected() {
     document.getElementById('sm-load-bar').style.display = 'none';
 }
 
-function smSetConnected(user, student) {
-    const name = student ? student.name
+function smSetConnected(user, student, students) {
+    smStudents = students || (student ? [student] : []);
+    const name = student ? (student.firstname + ' ' + student.lastname).trim()
         : (user ? (user.firstname + ' ' + user.lastname).trim() : '');
     document.getElementById('sm-dot').className = 'sm-dot connected';
     document.getElementById('sm-status-text').textContent = 'Schulmanager: ' + (name || 'verbunden');
@@ -4724,9 +4845,9 @@ function openSmLogin() {
     if (saved) {
         document.getElementById('sm-username').value = saved.username || '';
         document.getElementById('sm-password').value = saved.password || '';
-        // Direkt anmelden wenn alles gespeichert ist
+        // Direkt anmelden wenn alles gespeichert ist (immer ohne institutionId starten)
         if (saved.username && saved.password) {
-            smLogin(saved.institutionId || null);
+            smLogin(null);
             return;
         }
     }
@@ -4746,7 +4867,7 @@ function closeSmLogin() {
     document.getElementById('sm-login-btn').style.display = '';
 }
 
-async function smLogin(institutionId = null) {
+async function smLogin(institutionId = null, studentId = null) {
     const username = document.getElementById('sm-username').value.trim();
     const password = document.getElementById('sm-password').value;
     const errEl = document.getElementById('sm-error');
@@ -4761,7 +4882,7 @@ async function smLogin(institutionId = null) {
         const r = await fetch(SM_PROXY + '/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password, institutionId }),
+            body: JSON.stringify({ username, password, institutionId, studentId }),
             signal: AbortSignal.timeout(12000)
         });
         const d = await r.json();
@@ -4770,11 +4891,23 @@ async function smLogin(institutionId = null) {
             errEl.style.display = ''; return;
         }
         if (d.multipleAccounts) {
-            // Schulauswahl anzeigen
+            // Immer automatisch auswählen: gespeicherte ID oder erste Schule in der Liste
+            const savedCreds = JSON.parse(localStorage.getItem('wp_sm_creds') || 'null');
+            const id = (savedCreds && savedCreds.institutionId) || d.multipleAccounts[0].id;
+            smLogin(id);
+            return;
+        }
+        if (d.multipleStudents) {
+            // Kindauswahl anzeigen
+            const savedCreds = JSON.parse(localStorage.getItem('wp_sm_creds') || 'null');
+            if (savedCreds && savedCreds.studentId) {
+                smLogin(savedCreds.institutionId || null, savedCreds.studentId);
+                return;
+            }
             const picker = document.getElementById('sm-school-picker');
             const list   = document.getElementById('sm-school-list');
-            list.innerHTML = d.multipleAccounts.map(a =>
-                `<button class="btn btn-outline btn-sm" onclick="smLogin(${a.id})">${h(a.label)}</button>`
+            list.innerHTML = d.multipleStudents.map(s =>
+                `<button class="btn btn-outline btn-sm" onclick="smLogin(null,${s.id})">${h(s.firstname)} ${h(s.lastname)}</button>`
             ).join('');
             picker.style.display = '';
             document.getElementById('sm-username').style.display = 'none';
@@ -4786,9 +4919,10 @@ async function smLogin(institutionId = null) {
         localStorage.setItem('wp_sm_creds', JSON.stringify({
             username: document.getElementById('sm-username').value.trim(),
             password: document.getElementById('sm-password').value,
-            institutionId: institutionId
+            institutionId: institutionId,
+            studentId: studentId
         }));
-        smSetConnected(d.user, d.student);
+        smSetConnected(d.user, d.student, d.students);
     } catch (e) {
         errEl.textContent = e.name === 'TimeoutError'
             ? 'Timeout – Schulmanager nicht erreichbar.'
@@ -4812,8 +4946,12 @@ async function smLoadStundenplan() {
     infoEl.textContent = 'Wird geladen …';
     btn.disabled = true;
     const week = todayWeekKey();
+    // Passenden Schulmanager-Schüler per Vorname suchen
+    const smMatch = smStudents.find(s =>
+        s.firstname && person.toLowerCase().startsWith(s.firstname.toLowerCase()));
+    const studentParam = smMatch ? '&studentId=' + smMatch.id : '';
     try {
-        const r = await fetch(SM_PROXY + '/stundenplan?week=' + week, {
+        const r = await fetch(SM_PROXY + '/stundenplan?week=' + week + studentParam, {
             signal: AbortSignal.timeout(12000)
         });
         const d = await r.json();
@@ -4828,8 +4966,10 @@ async function smLoadStundenplan() {
         renderStundenplanTab();
         const { kw } = formatWeekLabel(week);
         infoEl.textContent = 'KW ' + kw + ' geladen ✓';
-        fetch(SM_PROXY + '/shutdown').catch(() => {});
-        setTimeout(() => smSetProxyMissing(), 800);
+        if (getProxyAutoStop()) {
+            fetch(SM_PROXY + '/shutdown').catch(() => {});
+            setTimeout(() => smSetProxyMissing(), 800);
+        }
     } catch (e) {
         infoEl.textContent = 'Fehler: ' + (e.name === 'TimeoutError' ? 'Timeout' : 'Verbindung fehlgeschlagen');
     } finally {
@@ -4845,6 +4985,8 @@ loadStundenplan();
 renderMeals();
 renderWeekGrid();
 updateKeyIndicator();
+checkProxyStatus();
+setInterval(checkProxyStatus, 10000);
 document.getElementById('img-upload-input').addEventListener('change', handleImageUpload);
 window.addEventListener('resize', () => {
     const schedVisible = document.getElementById('tab-sched').style.display !== 'none';

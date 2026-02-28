@@ -8,6 +8,7 @@ Beenden mit:  Strg+C
 Voraussetzung: pip install requests icalendar
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -49,16 +50,51 @@ LOGIN_URL  = "https://login.schulmanager-online.de/api/login"
 API_URL    = "https://login.schulmanager-online.de/api/calls"
 
 # Globaler Zustand (läuft nur im lokalen Prozess)
-_token         = None
-_user          = None
-_student       = None
-_session       = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
-_pending_creds = None                 # Zugangsdaten für zweiten Login-Schritt (Schulauswahl)
+_token            = None
+_user             = None
+_student          = None
+_all_students     = []                   # Alle verfügbaren Schüler (für Dropdown-Wechsel)
+_session          = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
+_pending_creds    = None                 # Zugangsdaten für zweiten Login-Schritt (Schulauswahl)
+_pending_students = None                 # Student-Liste für Kindauswahl (Eltern-Account)
+
+
+def _compute_hash(password: str, salt: str) -> str:
+    """PBKDF2-SHA512 wie die Schulmanager Web-App (chunk-RRLRIRYH.js: Dt-Funktion).
+    Buffer.from(pw, 'binary') = Latin-1-Bytes; deriveBits 512*8 = 4096 Bit = 512 Byte; hex-kodiert."""
+    pw_bytes  = bytes(ord(c) & 0xFF for c in password)   # Node.js 'binary' encoding
+    salt_bytes = salt.encode('utf-8')                     # TextEncoder().encode(salt)
+    dk = hashlib.pbkdf2_hmac('sha512', pw_bytes, salt_bytes, 99999, dklen=512)
+    return dk.hex()
+
+
+def _get_salt(email: str, user_id=None, institution_id=None) -> str | None:
+    """Ruft /api/get-salt ab und gibt den Salt zurück."""
+    global _session
+    try:
+        resp = _session.post(
+            "https://login.schulmanager-online.de/api/get-salt",
+            json={"emailOrUsername": email, "userId": user_id, "institutionId": institution_id},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            try:
+                salt = resp.json()   # Angular HttpClient gibt JSON zurück
+            except Exception:
+                salt = resp.text
+            logging.debug(f"Salt erhalten (Länge {len(str(salt))}): {str(salt)[:30]}...")
+            return salt
+        logging.warning(f"get-salt Status {resp.status_code}")
+    except Exception as e:
+        logging.warning(f"get-salt fehlgeschlagen: {e}")
+    return None
 
 
 def _post_login(payload: dict) -> dict:
     """Sendet einen Login-Request und gibt die geparste Antwort zurück."""
     global _session
+    safe = {k: ('***' if k == 'password' else v) for k, v in payload.items()}
+    logging.debug(f"Sende Login-Payload: {safe}")
     last_err = None
     for attempt in range(3):
         try:
@@ -72,25 +108,45 @@ def _post_login(payload: dict) -> dict:
     else:
         raise last_err
     logging.debug(f"HTTP {resp.status_code} body: {resp.text[:500]}")
+    logging.debug(f"Response-Headers: {dict(resp.headers)}")
+    logging.debug(f"Session-Cookies: {dict(_session.cookies)}")
     resp.raise_for_status()
     data = resp.json()
     logging.debug(f"Login-Antwort ({payload.get('institutionId')}): {data}")
     return data
 
 
-def sm_login(username: str, password: str, institution_id=None) -> dict:
+def sm_login(username: str, password: str, institution_id=None, student_id=None) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
-    global _token, _user, _student, _pending_creds
+    global _token, _user, _student, _all_students, _pending_creds, _session, _pending_students
+
+    # Kindauswahl aus gespeicherter Liste – kein erneuter Login nötig
+    if student_id and _pending_students is not None:
+        match = next((s for s in _pending_students if s.get("id") == student_id), None)
+        _student = match or _pending_students[0]
+        _pending_students = None
+        logging.debug(f"Kind gewählt: {_student}")
+        return {"jwt": _token, "user": _user}
+
     if institution_id is not None and _pending_creds:
-        # Zweiter Schritt: Benutzername + Schulauswahl + Session-Cookie (kein Passwort)
+        # Zweiter Schritt: account.id wird als userId gesendet, institutionId bleibt null
+        # Quelle: chunk-TVU3KAYW.js → authenticate(t, i.id) mit institutionId=null
+        salt = _get_salt(_pending_creds["username"], user_id=institution_id, institution_id=None)
+        pw_hash = _compute_hash(_pending_creds["password"], salt) if salt else None
+        logging.debug(f"Hash berechnet: {'ja' if pw_hash else 'nein (kein Salt)'}")
         data = _post_login({
             "emailOrUsername": _pending_creds["username"],
+            "password":        _pending_creds["password"],
+            "hash":            pw_hash,
             "mobileApp":       False,
-            "institutionId":   institution_id
+            "userId":          institution_id,  # account.id als userId!
+            "twoFactorCode":   None,
+            "institutionId":   None             # null, nicht die account-ID
         })
         _pending_creds = None
     else:
-        # Erster Schritt: Zugangsdaten merken für evtl. Schulauswahl
+        # Erster Schritt: Neue Session, Zugangsdaten merken
+        _session = requests.Session()
         _pending_creds = {"username": username, "password": password}
         data = _post_login({
             "emailOrUsername": username,
@@ -107,40 +163,71 @@ def sm_login(username: str, password: str, institution_id=None) -> dict:
     _token   = data["jwt"]
     _user    = data["user"]
     _student = data["user"].get("associatedStudent")
+
+    # Eltern-Account: Schüler aus associatedParents holen
+    if not _student:
+        parents  = data["user"].get("associatedParents") or []
+        students = [p["student"] for p in parents if p.get("student")]
+        if len(students) == 1:
+            _student = students[0]
+            _all_students = students
+        elif len(students) > 1:
+            _all_students = students
+            if student_id:
+                # Gewünschtes Kind direkt setzen
+                match = next((s for s in students if s.get("id") == student_id), None)
+                _student = match or students[0]
+            else:
+                # Mehrere Kinder – Liste merken und Auswahl zurückgeben
+                _pending_students = students
+                return {"multipleStudents": students}
+    else:
+        _all_students = [_student]
+
     return data
 
 
 def week_key_to_dates(week_key: str):
-    """Wandelt 'YYYY-WNN' in Montag- und Freitagsdatum um."""
+    """Wandelt 'YYYY-WNN' in Montag- und Sonntagsdatum um.
+    Schulmanager behandelt das Enddatum als exklusiv → Sonntag nötig damit Freitag enthalten ist."""
     year_str, wn_str = week_key.split("-W")
     year, wn = int(year_str), int(wn_str)
     jan4   = datetime(year, 1, 4)
     monday = jan4 - timedelta(days=jan4.weekday()) + timedelta(weeks=wn - 1)
-    friday = monday + timedelta(days=4)
-    return monday.strftime("%Y-%m-%d"), friday.strftime("%Y-%m-%d")
+    sunday = monday + timedelta(days=6)
+    return monday.strftime("%Y-%m-%d"), sunday.strftime("%Y-%m-%d")
 
 
 _DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
-def fetch_stundenplan(week_key: str) -> dict:
+def fetch_stundenplan(week_key: str, student_id: int = None) -> dict:
     """Holt den Stundenplan und konvertiert ihn in das Wochenplaner-Format."""
+    # Schüler bestimmen: per ID aus _all_students, sonst aktueller _student
+    student = _student
+    if student_id and _all_students:
+        match = next((s for s in _all_students if s.get("id") == student_id), None)
+        if match:
+            student = match
     start, end = week_key_to_dates(week_key)
-    resp = requests.post(API_URL, json={
-        "bundleVersion": 1,
-        "modules": [{
+    payload = {
+        "bundleVersion": "138baca5f4c6fb8d92ce",
+        "requests": [{
             "moduleName":   "schedules",
             "endpointName": "get-actual-lessons",
-            "body": {
-                "student":   _student,
-                "startDate": start,
-                "endDate":   end
+            "parameters": {
+                "student": student,
+                "start":   start,
+                "end":     end
             }
         }]
-    }, headers={
+    }
+    logging.debug(f"Stundenplan-Request: student={student}, start={start}, end={end}")
+    resp = requests.post(API_URL, json=payload, headers={
         "Authorization": f"Bearer {_token}",
         "Content-Type":  "application/json"
     }, timeout=10)
+    logging.debug(f"Stundenplan HTTP {resp.status_code}: {resp.text[:1000]}")
     resp.raise_for_status()
     return _transform(resp.json())
 
@@ -165,9 +252,11 @@ def _transform(sm_data: dict) -> dict:
             if not actual:
                 continue
 
-            subj  = actual.get("subject", {}).get("abbreviation", "?")
-            room  = actual.get("room",    {}).get("name", "")
-            text  = subj + (f" {room}" if room else "")
+            subj     = actual.get("subject", {}).get("abbreviation", "?")
+            teachers = actual.get("teachers") or []
+            teacher  = teachers[0].get("abbreviation", "") if teachers else ""
+            room     = actual.get("room", {}).get("name", "")
+            text     = subj + (f" {teacher}" if teacher else "") + (f" {room}" if room else "")
 
             # Vertretung markieren
             orig = lesson.get("originalLesson")
@@ -236,8 +325,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
             week = (params.get("week") or [None])[0]
             if not week:
                 self._send(400, {"error": "Parameter 'week' fehlt"}); return
+            raw_sid = (params.get("studentId") or [None])[0]
+            student_id = int(raw_sid) if raw_sid and raw_sid.isdigit() else None
             try:
-                data = fetch_stundenplan(week)
+                data = fetch_stundenplan(week, student_id)
                 self._send(200, {"ok": True, "week": week, "data": data})
             except requests.HTTPError as e:
                 self._send(502, {"error": f"Schulmanager-Fehler: {e.response.status_code}"})
@@ -279,16 +370,21 @@ class ProxyHandler(BaseHTTPRequestHandler):
             username       = body.get("username", "").strip()
             password       = body.get("password", "")
             institution_id = body.get("institutionId", None)
+            student_id     = body.get("studentId", None)
             if not username or not password:
                 self._send(400, {"error": "Benutzername und Passwort erforderlich"}); return
             try:
-                data = sm_login(username, password, institution_id)
+                data = sm_login(username, password, institution_id, student_id)
                 if "multipleAccounts" in data:
                     self._send(200, {"multipleAccounts": data["multipleAccounts"]})
                     return
+                if "multipleStudents" in data:
+                    self._send(200, {"multipleStudents": data["multipleStudents"]})
+                    return
                 self._send(200, {
                     "ok":      True,
-                    "student": _student,
+                    "student":  _student,
+                    "students": _all_students,
                     "user": {
                         "firstname": data["user"].get("firstname"),
                         "lastname":  data["user"].get("lastname"),
