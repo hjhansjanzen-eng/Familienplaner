@@ -1310,10 +1310,18 @@
         /* ══ TERMINPLAN ══ */
         /* Week grid outer */
         .sched-week-outer { border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); background: var(--white); }
-        /* Single scroll container — everything scrolls together */
+        /* Feste Header-Zeile über dem Scrollbereich */
+        .sched-week-header { display: flex; gap: 4px; padding: 6px 6px 0; min-width: 420px; overflow: hidden; }
+        .sched-time-col-hdr { width: 38px; flex-shrink: 0; }
+        .sched-week-header .sched-wh-day { flex: 1; min-width: 0; }
+        /* Scrollbarer Bereich (Überlauf verbergen, Inhalt per Transform verschoben) */
         .sched-week-scroll { overflow: hidden; }
-        /* One flex row: time column + 7 day wrappers */
-        .sched-week-grid { display: flex; min-width: 420px; gap: 4px; padding: 6px; align-items: flex-start; }
+        /* Ein Flex-Row: Zeitspalte + 7 Tag-Spalten */
+        .sched-week-grid { display: flex; min-width: 420px; gap: 4px; padding: 0 6px 6px; align-items: flex-start; }
+        /* Zeitschieber */
+        .sched-time-slider-wrap { display: flex; align-items: center; gap: 8px; padding: 4px 10px 2px; }
+        .sched-slider-lbl { font-size: 11px; color: var(--text-4); white-space: nowrap; min-width: 72px; font-variant-numeric: tabular-nums; }
+        .sched-time-slider-wrap input[type=range] { flex: 1; cursor: pointer; accent-color: var(--s1, #34c759); }
         .sched-time-col { width: 38px; flex-shrink: 0; display: flex; flex-direction: column; }
         .sched-time-inner { position: relative; flex: 1; }
         .sched-hour-lbl {
@@ -1325,7 +1333,6 @@
         .sched-day-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         /* Sticky header cell inside wrapper */
         .sched-wh-day {
-            position: sticky; top: 0; z-index: 5;
             text-align: center; padding: 7px 2px; font-size: .7rem;
             font-weight: 700; color: var(--text-3); background: var(--white);
             border: 2px solid rgba(60,60,67,.18); border-bottom: none;
@@ -1598,6 +1605,10 @@
         </div>
         <div class="sched-week-outer" id="sched-week-outer">
             <!-- rendered by renderSchedWeek() -->
+        </div>
+        <div class="sched-time-slider-wrap">
+            <span id="sched-slider-lbl" class="sched-slider-lbl">07:00–22:00</span>
+            <input type="range" id="sched-time-slider" min="0" max="9" step="0.5" value="7" oninput="schedSetViewStart(this.value)">
         </div>
         <div class="sched-add-fab">
             <button class="sched-fab-btn" onclick="openApptForm(null,null)">
@@ -4320,28 +4331,34 @@ const SCHED_PERSONS = [
     { name: 'Emil',    color: '#af52de', bg: '#f5eeff' },
 ];
 const SCHED_SLOTS = [];
-for (let sh = 7; sh < 22; sh++) {
+for (let sh = 0; sh < 24; sh++) {
     SCHED_SLOTS.push(`${String(sh).padStart(2,'0')}:00`);
     SCHED_SLOTS.push(`${String(sh).padStart(2,'0')}:30`);
 }
-SCHED_SLOTS.push('22:00'); // end-of-day anchor
+SCHED_SLOTS.push('24:00'); // end-of-day anchor
+const SCHED_VISIBLE = 30;  // sichtbare Slots (15 Stunden)
+let schedViewStart = 7;    // sichtbarer Startbereich in Stunden (0–9)
 let ROW_H = 44; // px per 30-min slot — recalculated dynamically
-let GRID_H = (SCHED_SLOTS.length - 1) * ROW_H;
+let GRID_H = 48 * ROW_H;  // Gesamthöhe (24 Stunden)
 
 function calcSchedRowH() {
     const outer = document.getElementById('sched-week-outer');
     if (!outer) return 44;
     const rect = outer.getBoundingClientRect();
     if (rect.top === 0 && rect.height === 0) return ROW_H; // element hidden
-    // subtract space for FAB button (~68px) + main bottom padding (80px) + slack (12px)
-    const availH = window.innerHeight - rect.top - 160;
-    return Math.max(18, Math.floor(availH / (SCHED_SLOTS.length - 1)));
+    // subtract space for FAB button (~68px) + main bottom padding (80px) + slack (12px) + slider (~28px)
+    const availH = window.innerHeight - rect.top - 188;
+    return Math.max(18, Math.floor(availH / SCHED_VISIBLE));
 }
 
 function slotIdx(time) {
     const [hh, mm] = time.split(':').map(Number);
-    const idx = (hh - 7) * 2 + (mm >= 30 ? 1 : 0);
-    return Math.max(0, Math.min(SCHED_SLOTS.length - 1, idx));
+    return Math.max(0, Math.min(48, hh * 2 + (mm >= 30 ? 1 : 0)));
+}
+
+function timeToPx(time) {
+    const [hh, mm] = time.split(':').map(Number);
+    return (hh * 60 + mm) / 30 * ROW_H;
 }
 
 let scheduleData = {}, schedWeek = '', schedDay = 'mon';
@@ -4421,54 +4438,54 @@ function layoutAppts(appts) {
 
 function renderSchedWeek() {
     ROW_H  = calcSchedRowH();
-    GRID_H = (SCHED_SLOTS.length - 1) * ROW_H;
+    GRID_H = 48 * ROW_H;
+    const VISIBLE_H = SCHED_VISIBLE * ROW_H;
     const el = document.getElementById('sched-week-outer');
     const weekData = scheduleData[schedWeek] || {};
     const mon = schedWeekMonday();
     const todayKey = todaySchedDayKey();
     const isThisWeek = schedWeek === todayWeekKey();
 
-    // Time column — invisible spacer matches day-header height exactly, then labelled inner area
-    let timecol = '<div class="sched-time-col">'
-        + '<div class="sched-wh-day" style="visibility:hidden;pointer-events:none;border-color:transparent">M<span>0</span></div>'
-        + '<div class="sched-time-inner" style="height:' + GRID_H + 'px">';
-    for (let sh = 7; sh <= 21; sh++) {
-        timecol += '<span class="sched-hour-lbl" style="top:' + ((sh-7)*2*ROW_H) + 'px">' + sh + '</span>';
-    }
-    timecol += '</div></div>';
-
-    // Each day: header cell + content column wrapped together so they can never misalign
-    let daywrappers = '';
+    // ── 1. Header-Zeile (Tagesnamen + Datum, außerhalb des Scrollbereichs) ──
+    let hdr = '<div class="sched-week-header"><div class="sched-time-col-hdr"></div>';
     DAYS.forEach((d, i) => {
         const date = new Date(mon); date.setDate(mon.getDate() + i);
         const dateStr = date.getDate() + '.' + (date.getMonth()+1) + '.';
         const isToday = isThisWeek && d.key === todayKey;
         const isExp   = d.key === schedExpandedDay;
-        const appts   = layoutAppts(weekData[d.key] || []);
-
-        daywrappers += '<div class="sched-day-wrapper' + (isExp?' expanded':'') + '" style="flex:' + (isExp ? 3 : 1) + '">';
-
-        // Header cell
-        daywrappers += '<div class="sched-wh-day' + (d.weekend?' weekend':'') + (isToday?' today':'') + (isExp?' expanded':'') + '"'
+        hdr += '<div class="sched-wh-day' + (d.weekend?' weekend':'') + (isToday?' today':'') + (isExp?' expanded':'') + '"'
+            + ' style="flex:' + (isExp ? 3 : 1) + '"'
             + ' onclick="toggleExpandDay(\'' + d.key + '\')">'
             + d.label.slice(0,2) + (isToday ? '<span class="sched-wh-today-dot"></span>' : '')
             + '<span>' + dateStr + '</span></div>';
+    });
+    hdr += '</div>';
 
-        // Content column
-        daywrappers += '<div class="sched-day-col' + (d.weekend?' weekend':'') + '" style="height:' + GRID_H + 'px">';
+    // ── 2. Zeitspalte (Stundenmarkierungen 0–23) ──
+    let timecol = '<div class="sched-time-col"><div class="sched-time-inner" style="height:' + GRID_H + 'px">';
+    for (let sh = 0; sh <= 23; sh++) {
+        timecol += '<span class="sched-hour-lbl" style="top:' + (sh*2*ROW_H) + 'px">' + sh + '</span>';
+    }
+    timecol += '</div></div>';
+
+    // ── 3. Tages-Inhaltsspalten (ohne Header) ──
+    let daycols = '';
+    DAYS.forEach((d, i) => {
+        const isExp   = d.key === schedExpandedDay;
+        const appts   = layoutAppts(weekData[d.key] || []);
+        daycols += '<div class="sched-day-wrapper' + (isExp?' expanded':'') + '" style="flex:' + (isExp ? 3 : 1) + '">';
+        daycols += '<div class="sched-day-col' + (d.weekend?' weekend':'') + '" style="height:' + GRID_H + 'px">';
         SCHED_SLOTS.slice(0,-1).forEach((slot, si) => {
             const top = si * ROW_H;
             const mm  = parseInt(slot.split(':')[1]);
-            daywrappers += '<div class="sched-line' + (mm===0?' hour':'') + '" style="top:' + top + 'px"></div>';
-            daywrappers += '<div class="sched-click-zone" style="top:' + top + 'px;height:' + ROW_H + 'px" onclick="openApptForm(\'' + d.key + '\',\'' + slot + '\')"></div>';
+            daycols += '<div class="sched-line' + (mm===0?' hour':'') + '" style="top:' + top + 'px"></div>';
+            daycols += '<div class="sched-click-zone" style="top:' + top + 'px;height:' + ROW_H + 'px" onclick="openApptForm(\'' + d.key + '\',\'' + slot + '\')"></div>';
         });
         appts.forEach(a => {
             const persons = Array.isArray(a.persons) ? a.persons : (a.person ? [a.person] : []);
             const firstP  = SCHED_PERSONS.find(x => x.name === persons[0]);
-            const startI = Math.min(slotIdx(a.start), SCHED_SLOTS.length - 2); // max = letzte sichtbare Zeile
-            const endI   = slotIdx(a.end);
-            const top    = startI * ROW_H;
-            const height = Math.max((endI - startI) * ROW_H, ROW_H);
+            const top    = timeToPx(a.start);
+            const height = Math.max(timeToPx(a.end) - top, ROW_H / 2);
             const colW   = 100 / a._total;
             const left   = a._col * colW;
             const bg     = firstP ? firstP.bg    : (a.gcal ? '#e8f0fe' : '#f0f0f0');
@@ -4477,7 +4494,7 @@ function renderSchedWeek() {
                 const p = SCHED_PERSONS.find(x => x.name === name);
                 return '<span class="saa-person-pill" style="background:' + (p?p.bg:'#eee') + ';color:' + (p?p.color:'#999') + '">' + h(name) + '</span>';
             }).join('');
-            daywrappers += '<div class="sched-appt"'
+            daycols += '<div class="sched-appt"'
                 + ' onclick="event.stopPropagation();openEditApptForm(\'' + d.key + '\',\'' + a.id + '\')"'
                 + ' onmouseenter="showApptTooltip(event,\'' + d.key + '\',\'' + a.id + '\')"'
                 + ' onmouseleave="hideApptTooltip()"'
@@ -4485,11 +4502,35 @@ function renderSchedWeek() {
                 + '<span class="saa-title">' + h(a.title) + (a.gcal ? '<span class="gcal-badge">G</span>' : '') + '</span>'
                 + '<div class="saa-dots">' + pills + '</div></div>';
         });
-        daywrappers += '</div>';  // sched-day-col
-        daywrappers += '</div>';  // sched-day-wrapper
+        daycols += '</div>';  // sched-day-col
+        daycols += '</div>';  // sched-day-wrapper
     });
 
-    el.innerHTML = '<div class="sched-week-scroll"><div class="sched-week-grid">' + timecol + daywrappers + '</div></div>';
+    // ── 4. Zusammenbauen ──
+    el.innerHTML = hdr
+        + '<div class="sched-week-scroll" id="sched-week-scroll" style="height:' + VISIBLE_H + 'px">'
+        + '<div class="sched-week-grid" id="sched-week-grid">' + timecol + daycols + '</div>'
+        + '</div>';
+
+    schedApplyViewStart();
+}
+
+function schedApplyViewStart() {
+    const grid = document.getElementById('sched-week-grid');
+    if (grid) grid.style.transform = 'translateY(-' + (schedViewStart * 2 * ROW_H) + 'px)';
+    const slider = document.getElementById('sched-time-slider');
+    if (slider) slider.value = schedViewStart;
+    const lbl = document.getElementById('sched-slider-lbl');
+    if (lbl) {
+        const endH = schedViewStart + 15;
+        const fmt = v => String(Math.floor(v)).padStart(2,'0') + ':' + (v % 1 ? '30' : '00');
+        lbl.textContent = fmt(schedViewStart) + '–' + fmt(endH);
+    }
+}
+
+function schedSetViewStart(val) {
+    schedViewStart = parseFloat(val);
+    schedApplyViewStart();
 }
 
 function deleteSchedAppt(dayKey, id) {
