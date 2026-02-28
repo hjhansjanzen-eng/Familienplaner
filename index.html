@@ -639,6 +639,7 @@
             background: var(--white);
         }
         .si-name { flex: 1; font-size: .88rem; }
+        .si-meal { font-size: .73rem; color: var(--text-4); font-weight: 400; margin-left: 3px; }
         .shop-item.done .si-name { text-decoration: line-through; color: var(--text-4); }
         .shop-item.done .si-amt  { color: var(--text-4); }
         .shop-cat-header {
@@ -3020,7 +3021,6 @@ function renderMealsList() {
         ${g.items.map(m => `
         <div class="meal-card" id="mc-${h(m.id)}">
             <div class="meal-head" onclick="toggleCard('${h(m.id)}')">
-                <span class="meal-thumb" id="thumb-${h(m.id)}"></span>
                 <span class="meal-title">${h(m.name)}</span>
                 <span class="meal-badge">${m.ingredients.length} Zutaten</span>
                 <button class="fav-btn${favoriteMeals.has(m.id) ? ' active' : ''}" onclick="event.stopPropagation();toggleFav('${h(m.id)}')" title="Favorit">★</button>
@@ -3379,7 +3379,7 @@ function renderShopItem(it) {
     return `<div class="shop-item${ck ? ' done' : ''}">
         <input type="checkbox" ${ck ? 'checked' : ''} data-key="${h(it.key)}" onchange="toggleItem(this)">
         <span class="si-amt" onclick="editItemAmount(this,'${h(it.key)}',${it.amount||0},'${h(it.unit)}')" title="Menge anpassen">${amtStr || '–'}</span>
-        <span class="si-name">${h(it.name)}</span>
+        <span class="si-name">${h(it.name)}${it.meals && it.meals.length ? `<span class="si-meal">(${it.meals.map(h).join(', ')})</span>` : ''}</span>
         ${it.isCustom ? `<button class="btn-del" onclick="deleteCustomItem('${h(it.id)}')" title="Entfernen">×</button>` : ''}
     </div>`;
 }
@@ -3395,8 +3395,12 @@ function buildShoppingItems() {
             if (!meal) return;
             meal.ingredients.forEach(ing => {
                 const key = ing.name.trim().toLowerCase() + '|||' + ing.unit.trim().toLowerCase();
-                if (agg[key]) { agg[key].amount += ing.amount; }
-                else { agg[key] = { key, name: ing.name, unit: ing.unit, amount: ing.amount }; }
+                if (agg[key]) {
+                    agg[key].amount += ing.amount;
+                    if (!agg[key].meals.includes(meal.name)) agg[key].meals.push(meal.name);
+                } else {
+                    agg[key] = { key, name: ing.name, unit: ing.unit, amount: ing.amount, meals: [meal.name] };
+                }
             });
         });
     });
