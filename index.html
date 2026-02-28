@@ -1534,6 +1534,69 @@
         }
         .sm-select:focus { border-color: var(--green); }
         .sm-hint { font-size: .8rem; color: var(--text-3); }
+        /* ── HALLO PAGE ── */
+        .hallo-page { padding: 0 0 48px; }
+        .hallo-greeting { text-align: center; padding: 44px 20px 36px; }
+        .hallo-title {
+            font-size: 2.8rem; font-weight: 800; letter-spacing: -.5px; margin: 0 0 10px;
+            background: linear-gradient(135deg, var(--s1, var(--green-dark)), var(--s2, var(--green-mid)));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            line-height: 1.15;
+        }
+        .hallo-date { font-size: 1rem; color: var(--text-3); margin: 0; }
+        .hallo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px; padding: 0 2px;
+        }
+        .hallo-card {
+            background: var(--white); border-radius: var(--r);
+            box-shadow: var(--shadow-sm); padding: 20px 22px;
+            border: 1px solid var(--border-lt);
+        }
+        .hc-label {
+            font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+            color: var(--text-4); margin-bottom: 14px;
+        }
+        .hc-loading { color: var(--text-4); font-size: .85rem; }
+        /* Wetter */
+        .hallo-weather-main { display: flex; align-items: center; gap: 16px; }
+        .hw-icon { font-size: 3.2rem; line-height: 1; }
+        .hw-temp { font-size: 2.5rem; font-weight: 700; color: var(--text); letter-spacing: -1px; }
+        .hw-desc { font-size: .85rem; color: var(--text-3); margin-top: 2px; }
+        .hw-minmax { font-size: .8rem; color: var(--text-4); margin-top: 10px; }
+        .hw-location { font-size: .73rem; color: var(--text-4); margin-top: 3px; }
+        /* Mittagessen */
+        .hallo-lunch-img {
+            width: 100%; height: 150px; border-radius: 10px; background-size: cover;
+            background-position: center; margin-bottom: 12px; background-color: var(--bg);
+        }
+        .hl-name { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+        .hl-empty { color: var(--text-4); font-size: .88rem; }
+        /* Termine */
+        .he-event {
+            display: flex; gap: 12px; align-items: flex-start;
+            padding: 9px 0; border-bottom: 0.5px solid var(--border-lt);
+        }
+        .he-event:last-child { border-bottom: none; }
+        .he-time {
+            font-size: .78rem; font-weight: 700; color: var(--s1, var(--green-dark));
+            white-space: nowrap; min-width: 40px; padding-top: 1px;
+        }
+        .he-title { font-size: .9rem; color: var(--text); font-weight: 500; }
+        .he-persons { font-size: .75rem; color: var(--text-4); margin-top: 2px; }
+        .he-empty { color: var(--text-4); font-size: .88rem; }
+        /* Spruch */
+        .hallo-quote-text {
+            font-size: .98rem; color: var(--text-2); line-height: 1.65; font-style: italic;
+            padding-left: 20px; position: relative;
+        }
+        .hallo-quote-text::before {
+            content: '\201E'; position: absolute; left: 0; top: -6px;
+            font-size: 2.2rem; color: var(--s1, var(--green)); line-height: 1; font-style: normal;
+            opacity: .5;
+        }
+        .hallo-quote-author { font-size: .78rem; color: var(--text-4); margin-top: 10px; text-align: right; }
     </style>
 </head>
 <body>
@@ -1561,7 +1624,18 @@
 <main class="main">
 
     <section id="tab-hallo">
-        <!-- Inhalt folgt -->
+        <div class="hallo-page">
+            <div class="hallo-greeting">
+                <h1 class="hallo-title"><span id="hallo-greet">Hallo</span> Familie Janzen!</h1>
+                <p class="hallo-date" id="hallo-date"></p>
+            </div>
+            <div class="hallo-grid">
+                <div class="hallo-card"><div class="hc-label">Wetter</div><div id="hallo-weather"><div class="hc-loading">Wird geladen…</div></div></div>
+                <div class="hallo-card"><div class="hc-label">Mittagessen</div><div id="hallo-lunch"><div class="hc-loading">Wird geladen…</div></div></div>
+                <div class="hallo-card"><div class="hc-label">Termine heute</div><div id="hallo-events"><div class="hc-loading">Wird geladen…</div></div></div>
+                <div class="hallo-card"><div class="hc-label">Gedanke des Tages</div><div id="hallo-quote"></div></div>
+            </div>
+        </div>
     </section>
 
     <section id="tab-week" style="display:none">
@@ -4443,6 +4517,141 @@ function saveSchedState() {
     localStorage.setItem('wp_sched_day_v1',  JSON.stringify(schedDay));
 }
 
+// ── HALLO PAGE ──
+const HALLO_GREETINGS = [
+    'Moin','Guten Morgen','Grüß Gott','Servus','Hallo','Hey',
+    'Willkommen','Schön euch zu sehen','Guten Tag','Na ihr?',
+    'Bonjour','Ciao','Hola','Salut','Buenos días','Bom dia',
+    'Good morning','Howdy','G\'day','Ahoy',
+    'Konnichiwa','Namaste','Shalom','Merhaba','Salam',
+    'Tere','Hei','God dag','Zdravo','Ahoj','Szia','Oi',
+    'Yia sas','Dobré ráno','Góðan daginn',
+];
+const HALLO_QUOTES = [
+    { t:'Das Glück deines Lebens hängt von der Beschaffenheit deiner Gedanken ab.', a:'Marc Aurel' },
+    { t:'In der Familie lernen wir zuerst, was Liebe bedeutet.', a:'Unbekannt' },
+    { t:'Ein Lächeln ist die kürzeste Verbindung zwischen zwei Menschen.', a:'Victor Borge' },
+    { t:'Das Beste, was Eltern ihren Kindern geben können, ist Zeit.', a:'Unbekannt' },
+    { t:'Jeder Tag ist eine neue Chance, das zu tun, was du gestern nicht geschafft hast.', a:'Unbekannt' },
+    { t:'Wer aufhört besser werden zu wollen, hat aufgehört, gut zu sein.', a:'Philip Rosenthal' },
+    { t:'Nicht die Zeit macht uns alt, sondern der Verzicht auf Träume.', a:'Gabriel García Márquez' },
+    { t:'Das Schönste, was wir erleben können, ist das Geheimnisvolle.', a:'Albert Einstein' },
+    { t:'Stärke zeigt sich nicht darin, nie zu fallen, sondern darin, nach jedem Fall aufzustehen.', a:'Nelson Mandela' },
+    { t:'Lebe so, als ob du morgen sterben würdest. Lerne so, als ob du ewig leben würdest.', a:'Mahatma Gandhi' },
+    { t:'Die Freude liegt nicht im Ziel, sondern im Gehen.', a:'Marie von Ebner-Eschenbach' },
+    { t:'Sei du selbst die Veränderung, die du dir für diese Welt wünschst.', a:'Mahatma Gandhi' },
+    { t:'Kleine Taten, die man ausführt, sind besser als große, die man plant.', a:'George Marshall' },
+    { t:'Das einzig Beständige ist der Wandel.', a:'Heraklit' },
+    { t:'Wer ein Warum zum Leben hat, erträgt fast jedes Wie.', a:'Friedrich Nietzsche' },
+    { t:'Das Leben wird vorwärts gelebt und rückwärts verstanden.', a:'Søren Kierkegaard' },
+    { t:'Der einzige Weg, großartige Arbeit zu leisten, ist, das zu lieben, was du tust.', a:'Steve Jobs' },
+    { t:'Tue jeden Tag etwas, das dich Überwindung kostet.', a:'Eleanor Roosevelt' },
+    { t:'Es gibt nur eine Heldentat: die Welt so zu sehen, wie sie ist, und sie trotzdem zu lieben.', a:'Romain Rolland' },
+    { t:'Was du heute kannst besorgen, das verschiebe nicht auf morgen.', a:'Volksweisheit' },
+    { t:'Das größte Abenteuer des Lebens ist, das Leben zu lieben.', a:'Unbekannt' },
+];
+const WMO_ICONS = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
+    51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',
+    71:'❄️',73:'❄️',75:'❄️',77:'🌨️',80:'🌦️',81:'🌧️',82:'⛈️',
+    85:'🌨️',86:'🌨️',95:'⛈️',96:'⛈️',99:'⛈️',
+};
+const WMO_DESC = {
+    0:'Klarer Himmel',1:'Überwiegend klar',2:'Teils bewölkt',3:'Bedeckt',
+    45:'Nebel',48:'Nebel',51:'Leichter Nieselregen',53:'Nieselregen',55:'Starker Nieselregen',
+    61:'Leichter Regen',63:'Regen',65:'Starker Regen',
+    71:'Leichter Schneefall',73:'Schneefall',75:'Starker Schneefall',77:'Schneekörner',
+    80:'Regenschauer',81:'Regenschauer',82:'Starke Regenschauer',
+    85:'Schneeschauer',86:'Starke Schneeschauer',
+    95:'Gewitter',96:'Gewitter mit Hagel',99:'Starkes Gewitter mit Hagel',
+};
+
+function halloDayOfYear() {
+    const n = new Date(); return Math.floor((n - new Date(n.getFullYear(),0,0)) / 86400000);
+}
+
+function renderHalloPage() {
+    const day = halloDayOfYear();
+    // Begrüßung + Datum
+    document.getElementById('hallo-greet').textContent = HALLO_GREETINGS[day % HALLO_GREETINGS.length];
+    document.getElementById('hallo-date').textContent = new Date().toLocaleDateString('de-DE',
+        { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    // Spruch
+    const q = HALLO_QUOTES[day % HALLO_QUOTES.length];
+    document.getElementById('hallo-quote').innerHTML =
+        `<div class="hallo-quote-text">${h(q.t)}</div><div class="hallo-quote-author">— ${h(q.a)}</div>`;
+    // Reste
+    renderHalloLunch();
+    renderHalloEvents();
+    renderHalloWeather();
+}
+
+function renderHalloLunch() {
+    const el = document.getElementById('hallo-lunch');
+    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+    const mealId = currentPlan()[todayKey]?.lunch;
+    if (!mealId) { el.innerHTML = '<div class="hl-empty">Kein Mittagessen geplant</div>'; return; }
+    const meal = meals.find(m => m.id === mealId);
+    if (!meal) { el.innerHTML = '<div class="hl-empty">Gericht nicht gefunden</div>'; return; }
+    ImageDB.get(mealId).then(img => {
+        el.innerHTML = (img ? `<div class="hallo-lunch-img" style="background-image:url(${img})"></div>` : '')
+            + `<div class="hl-name">${h(meal.name)}</div>`;
+    }).catch(() => { el.innerHTML = `<div class="hl-name">${h(meal.name)}</div>`; });
+}
+
+function renderHalloEvents() {
+    const el = document.getElementById('hallo-events');
+    const todayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+    const events = ((scheduleData[todayWeekKey()] || {})[todayKey] || [])
+        .slice().sort((a,b) => a.start.localeCompare(b.start));
+    if (!events.length) { el.innerHTML = '<div class="he-empty">Keine Termine heute 🎉</div>'; return; }
+    el.innerHTML = events.map(ev =>
+        `<div class="he-event">
+            <div class="he-time">${h(ev.start)}</div>
+            <div><div class="he-title">${h(ev.title)}</div>
+            ${ev.persons?.length ? `<div class="he-persons">${ev.persons.map(h).join(', ')}</div>` : ''}</div>
+        </div>`).join('');
+}
+
+async function renderHalloWeather() {
+    const el = document.getElementById('hallo-weather');
+    const draw = (cur, daily, city) => {
+        const code = cur.weather_code, temp = Math.round(cur.temperature_2m);
+        const tmax = Math.round(daily.temperature_2m_max[0]), tmin = Math.round(daily.temperature_2m_min[0]);
+        el.innerHTML =
+            `<div class="hallo-weather-main">
+                <div class="hw-icon">${WMO_ICONS[code]||'🌡️'}</div>
+                <div><div class="hw-temp">${temp}°</div><div class="hw-desc">${WMO_DESC[code]||''}</div></div>
+            </div>
+            <div class="hw-minmax">↑ ${tmax}° &nbsp;↓ ${tmin}°</div>
+            ${city ? `<div class="hw-location">${h(city)}</div>` : ''}`;
+    };
+    const load = async (lat, lon, city) => {
+        try {
+            const r = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+                + `&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min`
+                + `&timezone=auto&forecast_days=1`,
+                { signal: AbortSignal.timeout(8000) });
+            const d = await r.json();
+            draw(d.current, d.daily, city);
+        } catch { el.innerHTML = '<div class="hc-loading">Wetter nicht verfügbar</div>'; }
+    };
+    if (!navigator.geolocation) { load(51.1657, 10.4515, ''); return; }
+    navigator.geolocation.getCurrentPosition(async pos => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        let city = '';
+        try {
+            const gr = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+                { signal: AbortSignal.timeout(5000) });
+            const gd = await gr.json();
+            city = gd.address?.city || gd.address?.town || gd.address?.village || '';
+        } catch {}
+        load(lat, lon, city);
+    }, () => load(51.1657, 10.4515, ''));
+}
+
 function switchTab(tab) {
     document.getElementById('tab-hallo').style.display        = tab === 'hallo'        ? '' : 'none';
     document.getElementById('tab-week').style.display         = tab === 'week'         ? '' : 'none';
@@ -4452,6 +4661,7 @@ function switchTab(tab) {
     document.getElementById('app-tab-week').classList.toggle('active',        tab === 'week');
     document.getElementById('app-tab-sched').classList.toggle('active',       tab === 'sched');
     document.getElementById('app-tab-stundenplan').classList.toggle('active', tab === 'stundenplan');
+    if (tab === 'hallo')        { renderHalloPage(); }
     if (tab === 'sched')        { renderSchedTab(); checkProxyStatus(); }
     if (tab === 'stundenplan')  { renderStundenplanTab(); smCheckStatus(); }
 }
@@ -5078,6 +5288,7 @@ loadSchedState();
 loadStundenplan();
 renderMeals();
 renderWeekGrid();
+renderHalloPage();
 updateKeyIndicator();
 checkProxyStatus();
 setInterval(checkProxyStatus, 10000);
