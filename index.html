@@ -4681,6 +4681,7 @@ async function renderHalloWeather() {
 
 // ===== NAS / Synology Photos =====
 let _nasSid = null;
+const NAS_PROXY = 'http://localhost:8765';
 
 function nasLoadConfig() {
     try { return JSON.parse(localStorage.getItem('wp_nas') || '{}'); } catch { return {}; }
@@ -4702,31 +4703,38 @@ function nasFormHtml() {
         </div>`;
 }
 
+// Alle NAS-API-Aufrufe laufen über den lokalen Proxy (umgeht CORS bei file://-Origin).
+async function nasApiCall(nasUrl, paramsObj) {
+    const ep = nasUrl.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
+    const r = await fetch(NAS_PROXY + '/nas-forward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: ep, params: paramsObj }),
+        signal: AbortSignal.timeout(12000)
+    });
+    if (!r.ok) throw new Error('Proxy-Fehler ' + r.status);
+    return r.json();
+}
+
 async function nasLogin(url, user, pass) {
-    const ep = url.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
-    const params = new URLSearchParams({
+    const d = await nasApiCall(url, {
         api: 'SYNO.API.Auth', version: '7', method: 'login',
         account: user, passwd: pass, session: 'SynoPhotoSession', format: 'sid'
     });
-    const r = await fetch(ep + '?' + params, { signal: AbortSignal.timeout(10000) });
-    const d = await r.json();
     if (!d.success) throw new Error('Login fehlgeschlagen (Code ' + (d.error?.code || '?') + ')');
     return d.data.sid;
 }
 
 async function nasSearchByDate(url, sid, year, month, day) {
-    const ep = url.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
     const from = Math.floor(new Date(year, month - 1, day, 0, 0, 0).getTime() / 1000);
     const to   = Math.floor(new Date(year, month - 1, day, 23, 59, 59).getTime() / 1000);
-    const params = new URLSearchParams({
+    const d = await nasApiCall(url, {
         api: 'SYNO.Foto.Browse.Item', version: '4', method: 'list',
         start_time: from, end_time: to,
         offset: 0, limit: 30, type: 'photo',
         additional: '["thumbnail"]',
         _sid: sid
     });
-    const r = await fetch(ep + '?' + params, { signal: AbortSignal.timeout(10000) });
-    const d = await r.json();
     if (!d.success) return [];
     return d.data?.list || [];
 }
@@ -4735,7 +4743,9 @@ function nasThumbUrl(url, sid, item) {
     const ep = url.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
     const cacheKey = item.additional?.thumbnail?.cache_key || '';
     if (!cacheKey) return null;
-    return ep + '?' + new URLSearchParams({
+    // Thumbnail über Proxy laden (kein direkter Browser-Request ans NAS nötig)
+    return NAS_PROXY + '/nas-thumb?' + new URLSearchParams({
+        nasUrl: ep,
         api: 'SYNO.Foto.Thumbnail', version: '2', method: 'get',
         id: item.id, cache_key: cacheKey, type: 'unit', size: 'sm', _sid: sid
     });

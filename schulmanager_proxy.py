@@ -358,6 +358,25 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._send(200, {"configured": bool(_gcal_url),
                              "hasIcal": HAS_ICAL})
 
+        elif parsed.path == "/nas-thumb":
+            # Leitet Synology-Thumbnail-Requests durch (umgeht CORS bei file://-Origin).
+            # Parameter: nasUrl=<NAS-API-Endpunkt> + alle SYNO.Foto.Thumbnail-Parameter.
+            nas_url = (params.get("nasUrl") or [None])[0]
+            if not nas_url:
+                self._send(400, {"error": "nasUrl fehlt"}); return
+            fwd = {k: v[0] for k, v in params.items() if k != "nasUrl"}
+            try:
+                r = requests.get(nas_url, params=fwd, timeout=15, stream=True)
+                ct = r.headers.get("Content-Type", "image/jpeg")
+                self.send_response(200)
+                self.send_header("Content-Type", ct)
+                _cors(self)
+                self.end_headers()
+                for chunk in r.iter_content(8192):
+                    self.wfile.write(chunk)
+            except Exception as e:
+                self._send(503, {"error": str(e)})
+
         elif parsed.path == "/shutdown":
             self._send(200, {"ok": True})
             threading.Thread(target=_shutdown_server, daemon=True).start()
@@ -417,6 +436,27 @@ class ProxyHandler(BaseHTTPRequestHandler):
             try:
                 _save_gcal_config(url)
                 self._send(200, {"ok": True})
+            except Exception as e:
+                self._send(500, {"error": str(e)})
+
+        elif parsed.path == "/nas-forward":
+            # Leitet Synology-API-Aufrufe durch (umgeht CORS bei file://-Origin).
+            # Body: { "url": "<NAS-entry.cgi-URL>", "params": { ... } }
+            nas_url    = body.get("url", "").strip()
+            nas_params = body.get("params", {})
+            if not nas_url:
+                self._send(400, {"error": "url fehlt"}); return
+            try:
+                r = requests.get(nas_url, params=nas_params, timeout=15)
+                try:
+                    self._send(200, r.json())
+                except Exception:
+                    self._send(502, {"error": f"Keine JSON-Antwort (HTTP {r.status_code})",
+                                     "preview": r.text[:300]})
+            except requests.exceptions.ConnectionError:
+                self._send(503, {"error": "NAS nicht erreichbar"})
+            except requests.exceptions.Timeout:
+                self._send(503, {"error": "NAS-Zeitüberschreitung"})
             except Exception as e:
                 self._send(500, {"error": str(e)})
 
