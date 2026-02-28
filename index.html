@@ -1597,6 +1597,31 @@
             opacity: .5;
         }
         .hallo-quote-author { font-size: .78rem; color: var(--text-4); margin-top: 10px; text-align: right; }
+
+        /* NAS Memories */
+        .hallo-memories-wrap { margin-top: 28px; padding: 0 4px; }
+        .mem-heading { font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+            color: var(--text-4); margin: 0 0 14px 4px; }
+        .mem-year-group { margin-bottom: 20px; }
+        .mem-year-label { font-size: .78rem; font-weight: 600; color: var(--text-4); margin-bottom: 7px; padding-left: 2px; }
+        .mem-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+        .mem-strip::-webkit-scrollbar { height: 4px; }
+        .mem-strip::-webkit-scrollbar-track { background: transparent; }
+        .mem-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .mem-img { flex: 0 0 auto; width: 130px; height: 97px; border-radius: 9px; overflow: hidden;
+            background: var(--surface-2); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+        .mem-img:hover { transform: scale(1.04); box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+        .mem-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .nas-config-btn { display: inline-flex; align-items: center; gap: 5px; font-size: .75rem;
+            color: var(--text-4); background: none; border: none; cursor: pointer;
+            padding: 4px 8px; border-radius: 6px; transition: background .15s; margin-top: 4px; }
+        .nas-config-btn:hover { background: var(--surface-2); }
+        .nas-form { background: var(--surface-2); border-radius: 12px; padding: 16px; margin-top: 8px; display: none; }
+        .nas-form.open { display: block; }
+        .nas-form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-top: 8px; }
+        .nas-inp { flex: 1 1 150px; padding: 7px 10px; border-radius: 7px; border: 1.5px solid var(--border);
+            background: var(--white); color: var(--text); font-size: .85rem; min-width: 0; }
+        .nas-inp:focus { border-color: var(--s1, var(--green)); outline: none; }
     </style>
 </head>
 <body>
@@ -1635,6 +1660,7 @@
                 <div class="hallo-card"><div class="hc-label">Termine heute</div><div id="hallo-events"><div class="hc-loading">Wird geladen…</div></div></div>
                 <div class="hallo-card"><div class="hc-label">Gedanke des Tages</div><div id="hallo-quote"></div></div>
             </div>
+            <div class="hallo-memories-wrap" id="hallo-memories"></div>
         </div>
     </section>
 
@@ -4584,6 +4610,7 @@ function renderHalloPage() {
     renderHalloLunch();
     renderHalloEvents();
     renderHalloWeather();
+    renderHalloMemories();
 }
 
 function renderHalloLunch() {
@@ -4650,6 +4677,139 @@ async function renderHalloWeather() {
         } catch {}
         load(lat, lon, city);
     }, () => load(51.1657, 10.4515, ''));
+}
+
+// ===== NAS / Synology Photos =====
+let _nasSid = null;
+
+function nasLoadConfig() {
+    try { return JSON.parse(localStorage.getItem('wp_nas') || '{}'); } catch { return {}; }
+}
+function nasSaveConfig(cfg) { localStorage.setItem('wp_nas', JSON.stringify(cfg)); }
+
+function nasFormHtml() {
+    const cfg = nasLoadConfig();
+    return `<button class="nas-config-btn" onclick="nasShowConfig()">⚙ NAS-Einstellungen</button>
+        <div class="nas-form" id="nas-form">
+            <div style="font-size:.85rem;font-weight:600;margin-bottom:4px">Synology NAS verbinden</div>
+            <div class="nas-form-row">
+                <input class="nas-inp" id="nas-url" type="url" placeholder="http://192.168.x.x:5000" value="${h(cfg.url||'')}">
+                <input class="nas-inp" id="nas-user" type="text" placeholder="Benutzername" value="${h(cfg.user||'')}">
+                <input class="nas-inp" id="nas-pass" type="password" placeholder="Passwort">
+                <button class="btn btn-primary btn-sm" onclick="nasConnect()">Verbinden</button>
+            </div>
+            <div id="nas-err" style="font-size:.78rem;color:var(--danger,#e55);margin-top:6px"></div>
+        </div>`;
+}
+
+async function nasLogin(url, user, pass) {
+    const ep = url.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
+    const params = new URLSearchParams({
+        api: 'SYNO.API.Auth', version: '7', method: 'login',
+        account: user, passwd: pass, session: 'SynoPhotoSession', format: 'sid'
+    });
+    const r = await fetch(ep + '?' + params, { signal: AbortSignal.timeout(10000) });
+    const d = await r.json();
+    if (!d.success) throw new Error('Login fehlgeschlagen (Code ' + (d.error?.code || '?') + ')');
+    return d.data.sid;
+}
+
+async function nasSearchByDate(url, sid, year, month, day) {
+    const ep = url.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
+    const from = Math.floor(new Date(year, month - 1, day, 0, 0, 0).getTime() / 1000);
+    const to   = Math.floor(new Date(year, month - 1, day, 23, 59, 59).getTime() / 1000);
+    const params = new URLSearchParams({
+        api: 'SYNO.Foto.Browse.Item', version: '4', method: 'list',
+        start_time: from, end_time: to,
+        offset: 0, limit: 30, type: 'photo',
+        additional: '["thumbnail"]',
+        _sid: sid
+    });
+    const r = await fetch(ep + '?' + params, { signal: AbortSignal.timeout(10000) });
+    const d = await r.json();
+    if (!d.success) return [];
+    return d.data?.list || [];
+}
+
+function nasThumbUrl(url, sid, item) {
+    const ep = url.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
+    const cacheKey = item.additional?.thumbnail?.cache_key || '';
+    if (!cacheKey) return null;
+    return ep + '?' + new URLSearchParams({
+        api: 'SYNO.Foto.Thumbnail', version: '2', method: 'get',
+        id: item.id, cache_key: cacheKey, type: 'unit', size: 'sm', _sid: sid
+    });
+}
+
+async function renderHalloMemories() {
+    const el = document.getElementById('hallo-memories');
+    if (!el) return;
+    const cfg = nasLoadConfig();
+    if (!cfg.url || !cfg.user || !cfg.pass) {
+        el.innerHTML = `<div style="font-size:.82rem;color:var(--text-4);margin-bottom:4px">📷 Erinnerungen</div>
+            <div style="font-size:.82rem;color:var(--text-4)">NAS nicht eingerichtet.</div>
+            ${nasFormHtml()}`;
+        return;
+    }
+    el.innerHTML = `<div class="mem-heading">📷 Erinnerungen</div><div class="hc-loading">Wird geladen…</div>`;
+    try {
+        if (!_nasSid) _nasSid = await nasLogin(cfg.url, cfg.user, cfg.pass);
+        const now = new Date();
+        const month = now.getMonth() + 1, day = now.getDate(), curYear = now.getFullYear();
+        const groups = [];
+        for (let y = curYear - 1; y >= curYear - 7; y--) {
+            const items = await nasSearchByDate(cfg.url, _nasSid, y, month, day);
+            if (items.length) groups.push({ year: y, items });
+        }
+        const yearsAgo = n => n === 1 ? 'Vor einem Jahr' : `Vor ${n} Jahren`;
+        if (!groups.length) {
+            el.innerHTML = `<div class="mem-heading">📷 Erinnerungen</div>
+                <div style="font-size:.82rem;color:var(--text-4)">Keine Fotos für diesen Tag gefunden.</div>
+                ${nasFormHtml()}`;
+            return;
+        }
+        el.innerHTML = `<div class="mem-heading">📷 Erinnerungen</div>`
+            + groups.map(g => {
+                const ago = yearsAgo(curYear - g.year);
+                const imgs = g.items.map(item => {
+                    const src = nasThumbUrl(cfg.url, _nasSid, item);
+                    return src
+                        ? `<div class="mem-img"><img src="${src}" loading="lazy" onerror="this.parentElement.style.display='none'" alt=""></div>`
+                        : '';
+                }).join('');
+                return `<div class="mem-year-group">
+                    <div class="mem-year-label">${h(ago)} (${g.year})</div>
+                    <div class="mem-strip">${imgs}</div>
+                </div>`;
+            }).join('')
+            + nasFormHtml();
+    } catch (err) {
+        _nasSid = null;
+        el.innerHTML = `<div class="mem-heading">📷 Erinnerungen</div>
+            <div style="font-size:.82rem;color:var(--danger,#e55);margin-bottom:6px">Fehler: ${h(String(err.message || err))}</div>
+            ${nasFormHtml()}`;
+    }
+}
+
+function nasShowConfig() {
+    const form = document.getElementById('nas-form');
+    if (form) form.classList.toggle('open');
+}
+
+async function nasConnect() {
+    const url  = (document.getElementById('nas-url')?.value || '').trim();
+    const user = (document.getElementById('nas-user')?.value || '').trim();
+    const pass = (document.getElementById('nas-pass')?.value || '').trim();
+    const errEl = document.getElementById('nas-err');
+    if (!url || !user || !pass) { if (errEl) errEl.textContent = 'Bitte alle Felder ausfüllen.'; return; }
+    if (errEl) errEl.textContent = 'Verbinde…';
+    try {
+        _nasSid = await nasLogin(url, user, pass);
+        nasSaveConfig({ url, user, pass });
+        renderHalloMemories();
+    } catch (e) {
+        if (errEl) errEl.textContent = 'Fehler: ' + (e.message || e);
+    }
 }
 
 function switchTab(tab) {
