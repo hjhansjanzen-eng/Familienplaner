@@ -4718,11 +4718,11 @@ async function nasApiCall(nasUrl, path, paramsObj) {
 }
 
 async function nasLogin(url, user, pass) {
-    // Auth läuft über den Standard-DSM-Endpunkt /webapi/auth.cgi,
-    // NICHT über /photo/webapi/entry.cgi (der löst eine Web-UI-Weiterleitung aus).
+    // /webapi/auth.cgi: Standard-DSM-Endpunkt, gibt direkt JSON zurück.
+    // session=SynoPhotoSession: nötig damit die SID Zugriff auf die Foto-API hat.
     const d = await nasApiCall(url, '/webapi/auth.cgi', {
         api: 'SYNO.API.Auth', version: '3', method: 'login',
-        account: user, passwd: pass, format: 'sid'
+        account: user, passwd: pass, session: 'SynoPhotoSession', format: 'sid'
     });
     if (!d.success) throw new Error('Login fehlgeschlagen (Code ' + (d.error?.code || '?') + ')');
     return d.data.sid;
@@ -4731,7 +4731,7 @@ async function nasLogin(url, user, pass) {
 async function nasSearchByDate(url, sid, year, month, day) {
     const from = Math.floor(new Date(year, month - 1, day, 0, 0, 0).getTime() / 1000);
     const to   = Math.floor(new Date(year, month - 1, day, 23, 59, 59).getTime() / 1000);
-    const d = await nasApiCall(url, '/photo/webapi/entry.cgi', {
+    const d = await nasApiCall(url, '/webapi/entry.cgi', {
         api: 'SYNO.Foto.Browse.Item', version: '4', method: 'list',
         start_time: from, end_time: to,
         offset: 0, limit: 30, type: 'photo',
@@ -4743,7 +4743,7 @@ async function nasSearchByDate(url, sid, year, month, day) {
 }
 
 function nasThumbUrl(url, sid, item) {
-    const ep = url.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
+    const ep = url.replace(/\/$/, '') + '/webapi/entry.cgi';
     const cacheKey = item.additional?.thumbnail?.cache_key || '';
     if (!cacheKey) return null;
     // Thumbnail über Proxy laden (kein direkter Browser-Request ans NAS nötig)
