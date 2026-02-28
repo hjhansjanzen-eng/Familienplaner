@@ -1502,14 +1502,14 @@
             margin-bottom: 14px; box-shadow: var(--shadow-sm);
             border: 1px solid var(--border-lt);
         }
-        .sm-status { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 180px; }
+        .sm-status { display: flex; align-items: center; gap: 5px; }
         .sm-dot {
             width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
             background: var(--text-4); transition: background .3s;
         }
         .sm-dot.connected { background: var(--green); }
         .sm-dot.error { background: var(--red); }
-        #sm-status-text { font-size: .85rem; color: var(--text-2); }
+        #sm-status-text { font-size: .72rem; color: var(--text-4); }
         .sm-login-form {
             background: var(--white); border-radius: var(--r); padding: 16px;
             margin-bottom: 14px; box-shadow: var(--shadow-sm);
@@ -1636,15 +1636,6 @@
     </section>
 
     <section id="tab-stundenplan" style="display:none">
-        <!-- Schulmanager Verbindungsleiste -->
-        <div class="sm-bar" id="sm-bar">
-            <div class="sm-status">
-                <span class="sm-dot" id="sm-dot"></span>
-                <span id="sm-status-text">Schulmanager: wird gesucht …</span>
-            </div>
-            <button class="btn btn-outline btn-sm" id="sm-connect-btn" onclick="openSmLogin()" style="display:none">Anmelden</button>
-        </div>
-
         <!-- Login-Formular -->
         <div class="sm-login-form" id="sm-login-form" style="display:none">
             <div class="sm-login-title">Bei Schulmanager anmelden</div>
@@ -1668,6 +1659,11 @@
         <div class="sp-header-row">
             <div class="sp-person-sel" id="sp-person-sel"></div>
             <div class="sp-header-actions">
+                <div class="sm-status">
+                    <span class="sm-dot" id="sm-dot"></span>
+                    <span id="sm-status-text">Schulmanager: wird gesucht …</span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="sm-connect-btn" onclick="openSmLogin()" style="display:none">Anmelden</button>
                 <div class="sm-load-bar" id="sm-load-bar" style="display:none">
                     <span class="sm-hint" id="sm-loaded-info"></span>
                     <button class="btn btn-primary btn-sm" onclick="smLoadStundenplan()">Aktuelle Woche laden</button>
