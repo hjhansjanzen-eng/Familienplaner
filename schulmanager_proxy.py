@@ -50,13 +50,12 @@ LOGIN_URL  = "https://login.schulmanager-online.de/api/login"
 API_URL    = "https://login.schulmanager-online.de/api/calls"
 
 # Globaler Zustand (läuft nur im lokalen Prozess)
-_token            = None
-_user             = None
-_student          = None
-_all_students     = []                   # Alle verfügbaren Schüler (für Dropdown-Wechsel)
-_session          = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
-_pending_creds    = None                 # Zugangsdaten für zweiten Login-Schritt (Schulauswahl)
-_pending_students = None                 # Student-Liste für Kindauswahl (Eltern-Account)
+_token         = None
+_user          = None
+_student       = None
+_all_students  = []                   # Alle verfügbaren Schüler
+_session       = requests.Session()   # Session bleibt offen → Cookies werden beibehalten
+_pending_creds = None                 # Zugangsdaten für zweiten Login-Schritt (Schulauswahl)
 
 
 def _compute_hash(password: str, salt: str) -> str:
@@ -118,15 +117,7 @@ def _post_login(payload: dict) -> dict:
 
 def sm_login(username: str, password: str, institution_id=None, student_id=None) -> dict:
     """Meldet sich bei Schulmanager an und gibt die Antwort zurück."""
-    global _token, _user, _student, _all_students, _pending_creds, _session, _pending_students
-
-    # Kindauswahl aus gespeicherter Liste – kein erneuter Login nötig
-    if student_id and _pending_students is not None:
-        match = next((s for s in _pending_students if s.get("id") == student_id), None)
-        _student = match or _pending_students[0]
-        _pending_students = None
-        logging.debug(f"Kind gewählt: {_student}")
-        return {"jwt": _token, "user": _user}
+    global _token, _user, _student, _all_students, _pending_creds, _session
 
     if institution_id is not None and _pending_creds:
         # Zweiter Schritt: account.id wird als userId gesendet, institutionId bleibt null
@@ -174,13 +165,10 @@ def sm_login(username: str, password: str, institution_id=None, student_id=None)
         elif len(students) > 1:
             _all_students = students
             if student_id:
-                # Gewünschtes Kind direkt setzen
                 match = next((s for s in students if s.get("id") == student_id), None)
                 _student = match or students[0]
             else:
-                # Mehrere Kinder – Liste merken und Auswahl zurückgeben
-                _pending_students = students
-                return {"multipleStudents": students}
+                _student = students[0]
     else:
         _all_students = [_student]
 
@@ -377,9 +365,6 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 data = sm_login(username, password, institution_id, student_id)
                 if "multipleAccounts" in data:
                     self._send(200, {"multipleAccounts": data["multipleAccounts"]})
-                    return
-                if "multipleStudents" in data:
-                    self._send(200, {"multipleStudents": data["multipleStudents"]})
                     return
                 self._send(200, {
                     "ok":      True,

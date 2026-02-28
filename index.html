@@ -1643,8 +1643,6 @@
 
         <!-- Stundenplan laden (nach Login) -->
         <div class="sm-load-bar" id="sm-load-bar" style="display:none">
-            <span class="sm-hint">Laden für:</span>
-            <select id="sm-target-person" class="sm-select"></select>
             <button class="btn btn-primary btn-sm" onclick="smLoadStundenplan()">Aktuelle Woche laden</button>
             <span class="sm-hint" id="sm-loaded-info"></span>
         </div>
@@ -4832,8 +4830,6 @@ function smSetConnected(user, student, students) {
     document.getElementById('sm-logout-btn').style.display = '';
     const bar = document.getElementById('sm-load-bar');
     bar.style.display = '';
-    document.getElementById('sm-target-person').innerHTML =
-        SP_PERSONS.map(n => '<option value="' + h(n) + '">' + h(n) + '</option>').join('');
     closeSmLogin();
 }
 
@@ -4897,24 +4893,6 @@ async function smLogin(institutionId = null, studentId = null) {
             smLogin(id);
             return;
         }
-        if (d.multipleStudents) {
-            // Kindauswahl anzeigen
-            const savedCreds = JSON.parse(localStorage.getItem('wp_sm_creds') || 'null');
-            if (savedCreds && savedCreds.studentId) {
-                smLogin(savedCreds.institutionId || null, savedCreds.studentId);
-                return;
-            }
-            const picker = document.getElementById('sm-school-picker');
-            const list   = document.getElementById('sm-school-list');
-            list.innerHTML = d.multipleStudents.map(s =>
-                `<button class="btn btn-outline btn-sm" onclick="smLogin(null,${s.id})">${h(s.firstname)} ${h(s.lastname)}</button>`
-            ).join('');
-            picker.style.display = '';
-            document.getElementById('sm-username').style.display = 'none';
-            document.getElementById('sm-password').style.display = 'none';
-            btn.style.display = 'none';
-            return;
-        }
         // Zugangsdaten für nächstes Mal speichern
         localStorage.setItem('wp_sm_creds', JSON.stringify({
             username: document.getElementById('sm-username').value.trim(),
@@ -4940,32 +4918,37 @@ function smLogout() {
 }
 
 async function smLoadStundenplan() {
-    const person = document.getElementById('sm-target-person').value;
     const infoEl = document.getElementById('sm-loaded-info');
     const btn = document.querySelector('#sm-load-bar .btn-primary');
+    const week = todayWeekKey();
+    if (!smStudents.length) { infoEl.textContent = 'Keine Schüler verfügbar.'; return; }
     infoEl.textContent = 'Wird geladen …';
     btn.disabled = true;
-    const week = todayWeekKey();
-    // Passenden Schulmanager-Schüler per Vorname suchen
-    const smMatch = smStudents.find(s =>
-        s.firstname && person.toLowerCase().startsWith(s.firstname.toLowerCase()));
-    const studentParam = smMatch ? '&studentId=' + smMatch.id : '';
+    let errors = 0;
     try {
-        const r = await fetch(SM_PROXY + '/stundenplan?week=' + week + studentParam, {
-            signal: AbortSignal.timeout(12000)
-        });
-        const d = await r.json();
-        if (!r.ok) { infoEl.textContent = 'Fehler: ' + (d.error || 'Unbekannt'); return; }
-        if (!stundenplanData[person]) stundenplanData[person] = {};
-        SP_DAYS.forEach(dk => {
-            const dayData = d.data[dk] || {};
-            stundenplanData[person][dk] = SP_PERIODS.map(per => dayData[per.n] || '');
-        });
+        await Promise.all(smStudents.map(async student => {
+            // Person-Name aus SP_PERSONS anhand Vorname finden
+            const person = SP_PERSONS.find(n =>
+                n.toLowerCase().startsWith(student.firstname.toLowerCase())
+            ) || student.firstname;
+            try {
+                const r = await fetch(
+                    SM_PROXY + '/stundenplan?week=' + week + '&studentId=' + student.id,
+                    { signal: AbortSignal.timeout(12000) }
+                );
+                const d = await r.json();
+                if (!r.ok) { errors++; return; }
+                if (!stundenplanData[person]) stundenplanData[person] = {};
+                SP_DAYS.forEach(dk => {
+                    const dayData = d.data[dk] || {};
+                    stundenplanData[person][dk] = SP_PERIODS.map(per => dayData[per.n] || '');
+                });
+            } catch (e) { errors++; }
+        }));
         saveStundenplan();
-        stundenplanPerson = person;
         renderStundenplanTab();
         const { kw } = formatWeekLabel(week);
-        infoEl.textContent = 'KW ' + kw + ' geladen ✓';
+        infoEl.textContent = 'KW ' + kw + ' geladen ✓' + (errors ? ' (' + errors + ' Fehler)' : '');
         if (getProxyAutoStop()) {
             fetch(SM_PROXY + '/shutdown').catch(() => {});
             setTimeout(() => smSetProxyMissing(), 800);
