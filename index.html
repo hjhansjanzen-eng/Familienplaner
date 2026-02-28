@@ -4704,8 +4704,9 @@ function nasFormHtml() {
 }
 
 // Alle NAS-API-Aufrufe laufen über den lokalen Proxy (umgeht CORS bei file://-Origin).
-async function nasApiCall(nasUrl, paramsObj) {
-    const ep = nasUrl.replace(/\/$/, '') + '/photo/webapi/entry.cgi';
+// path: API-Pfad auf dem NAS, z.B. '/webapi/auth.cgi' oder '/photo/webapi/entry.cgi'
+async function nasApiCall(nasUrl, path, paramsObj) {
+    const ep = nasUrl.replace(/\/$/, '') + path;
     const r = await fetch(NAS_PROXY + '/nas-forward', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4717,9 +4718,11 @@ async function nasApiCall(nasUrl, paramsObj) {
 }
 
 async function nasLogin(url, user, pass) {
-    const d = await nasApiCall(url, {
-        api: 'SYNO.API.Auth', version: '7', method: 'login',
-        account: user, passwd: pass, session: 'SynoPhotoSession', format: 'sid'
+    // Auth läuft über den Standard-DSM-Endpunkt /webapi/auth.cgi,
+    // NICHT über /photo/webapi/entry.cgi (der löst eine Web-UI-Weiterleitung aus).
+    const d = await nasApiCall(url, '/webapi/auth.cgi', {
+        api: 'SYNO.API.Auth', version: '3', method: 'login',
+        account: user, passwd: pass, format: 'sid'
     });
     if (!d.success) throw new Error('Login fehlgeschlagen (Code ' + (d.error?.code || '?') + ')');
     return d.data.sid;
@@ -4728,7 +4731,7 @@ async function nasLogin(url, user, pass) {
 async function nasSearchByDate(url, sid, year, month, day) {
     const from = Math.floor(new Date(year, month - 1, day, 0, 0, 0).getTime() / 1000);
     const to   = Math.floor(new Date(year, month - 1, day, 23, 59, 59).getTime() / 1000);
-    const d = await nasApiCall(url, {
+    const d = await nasApiCall(url, '/photo/webapi/entry.cgi', {
         api: 'SYNO.Foto.Browse.Item', version: '4', method: 'list',
         start_time: from, end_time: to,
         offset: 0, limit: 30, type: 'photo',
