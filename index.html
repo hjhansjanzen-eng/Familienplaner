@@ -4346,17 +4346,7 @@ function startEditSpCell(dayKey, pi) {
         if (!stundenplanData[stundenplanPerson][dayKey]) stundenplanData[stundenplanPerson][dayKey] = [];
         stundenplanData[stundenplanPerson][dayKey][pi] = val;
         saveStundenplan();
-        // update cell in place
-        textEl.textContent = val;
-        textEl.style.display = '';
-        const iconEl = document.getElementById('sp-i-' + dayKey + '-' + pi);
-        if (iconEl) iconEl.textContent = spIcon(val);
-        input.remove();
-        if (p) {
-            td.classList.toggle('has-val', val.length > 0);
-            td.style.setProperty('--sp-color', val ? p.color : '');
-            td.style.setProperty('--sp-bg',    val ? p.bg    : '');
-        }
+        renderStundenplanTab();
     };
     input.addEventListener('blur', save);
     input.addEventListener('keydown', e => {
