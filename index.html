@@ -1395,18 +1395,22 @@
         }
         .sp-period-col strong { display: block; font-size: .75rem; color: var(--text-2); }
         .sp-cell {
-            height: 46px; padding: 0; vertical-align: middle;
+            height: 62px; padding: 0; vertical-align: middle;
             background: var(--white); border: 1.5px solid var(--border-lt); border-radius: 8px;
             cursor: pointer; transition: background .1s; position: relative;
         }
         .sp-cell:hover { background: var(--green-faint, #f0faf3); }
-        .sp-cell.has-val { border-color: var(--sp-color, var(--border)); background: var(--sp-bg, var(--white)); }
+        .sp-cell.has-val {
+            border-color: var(--sp-color, var(--border)); background: var(--sp-bg, var(--white));
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+        }
+        .sp-subj-icon { font-size: 1.1rem; line-height: 1; pointer-events: none; }
         .sp-cell-text {
-            display: block; text-align: center; font-size: .8rem; font-weight: 600;
-            padding: 4px 6px; line-height: 1.3; color: var(--sp-color, var(--text-1));
+            display: block; text-align: center; font-size: .75rem; font-weight: 600;
+            padding: 0 4px; line-height: 1.25; color: var(--sp-color, var(--text-1));
         }
         .sp-cell input {
-            width: 100%; height: 46px; border: none; background: transparent;
+            width: 100%; height: 62px; border: none; background: transparent;
             text-align: center; font-size: .8rem; font-weight: 600; outline: none;
             padding: 4px 6px; color: inherit; display: block;
         }
@@ -4228,6 +4232,35 @@ function applySeasonTheme() {
 
 // ── TERMINPLAN ──
 const SP_PERSONS = ['Jonas', 'Mika', 'Emil'];
+
+const SUBJECT_ICONS = {
+    'DE':'📖','D':'📖',
+    'MA':'🔢','M':'🔢','MTH':'🔢',
+    'EN':'🌐','E':'🌐','ENG':'🌐',
+    'FR':'🥐','FRZ':'🥐','F':'🥐',
+    'LA':'📜','LAT':'📜',
+    'BI':'🌿','BIO':'🌿',
+    'CH':'⚗️','CHE':'⚗️','CHEM':'⚗️',
+    'PH':'⚛️','PHY':'⚛️','PHYS':'⚛️',
+    'GE':'🏛️','GESCH':'🏛️',
+    'EK':'🌍','ERD':'🌍','GEO':'🌍',
+    'MU':'🎵','MUS':'🎵',
+    'KU':'🎨','KUN':'🎨',
+    'SP':'🏃','SPO':'🏃',
+    'RE':'✝️','REL':'✝️','RELI':'✝️',
+    'ET':'⚖️','ETH':'⚖️',
+    'IN':'💻','INF':'💻',
+    'PO':'🗳️','POL':'🗳️','POW':'🗳️',
+    'WI':'📊','WIR':'📊',
+    'NW':'🔬','SW':'👥',
+    'TW':'🔧','WER':'🔧','TECH':'🔧',
+    'HW':'🏠','AG':'🎯',
+};
+function spIcon(val) {
+    if (!val) return '';
+    const clean = val.startsWith('↔') ? val.slice(1).trim() : val;
+    return SUBJECT_ICONS[clean.split(/\s+/)[0].toUpperCase()] || '';
+}
 const SP_PERIODS = [
     { n:1, time:'07:45' }, { n:2, time:'08:30' },
     { n:3, time:'09:35' }, { n:4, time:'10:20' },
@@ -4273,9 +4306,11 @@ function renderStundenplanTab() {
         SP_DAYS.forEach(dk => {
             const val = (personData[dk] || [])[pi] || '';
             const hasVal = val.length > 0;
+            const icon = spIcon(val);
             html += '<td class="sp-cell' + (hasVal ? ' has-val' : '') + '"'
                 + (hasVal ? ' style="--sp-color:' + color + ';--sp-bg:' + bg + '"' : '')
                 + ' onclick="startEditSpCell(\'' + dk + '\',' + pi + ')">'
+                + '<span class="sp-subj-icon" id="sp-i-' + dk + '-' + pi + '">' + icon + '</span>'
                 + '<span class="sp-cell-text" id="sp-t-' + dk + '-' + pi + '">' + h(val) + '</span>'
                 + '</td>';
         });
@@ -4313,6 +4348,8 @@ function startEditSpCell(dayKey, pi) {
         // update cell in place
         textEl.textContent = val;
         textEl.style.display = '';
+        const iconEl = document.getElementById('sp-i-' + dayKey + '-' + pi);
+        if (iconEl) iconEl.textContent = spIcon(val);
         input.remove();
         if (p) {
             td.classList.toggle('has-val', val.length > 0);
