@@ -4235,6 +4235,7 @@ function applySeasonTheme() {
 const SP_PERSONS = ['Jonas', 'Mika', 'Emil'];
 
 const SUBJECT_ICONS = {
+    // Kürzel
     'DE':'📖','D':'📖',
     'MA':'🔢','M':'🔢','MTH':'🔢',
     'EN':'🎡','E':'🎡','ENG':'🎡',
@@ -4256,6 +4257,23 @@ const SUBJECT_ICONS = {
     'NW':'🔬','SW':'👥',
     'TW':'🔧','WER':'🔧','TECH':'🔧',
     'HW':'🏠','AG':'🎯',
+    // Vollständige deutsche Namen
+    'DEUTSCH':'📖','MATHEMATIK':'🔢',
+    'ENGLISCH':'🎡',
+    'FRANZÖSISCH':'🥐','FRANZOESISCH':'🥐','FRANZO':'🥐',
+    'LATEIN':'📜',
+    'BIOLOGIE':'🌿',
+    'CHEMIE':'🧪',
+    'PHYSIK':'⚛️',
+    'GESCHICHTE':'🏛️',
+    'ERDKUNDE':'🌍','GEOGRAPHIE':'🌍',
+    'MUSIK':'🎵',
+    'KUNST':'🎨',
+    'SPORT':'🏃','KÖRPERERZIEHUNG':'🏃','KOERPERERZIEHUNG':'🏃',
+    'RELIGION':'✝️','ETHIK':'⚖️',
+    'INFORMATIK':'💻',
+    'POLITIK':'🗳️','WIRTSCHAFT':'📊',
+    'TECHNIK':'🔧','WERKEN':'🔧',
 };
 function spIcon(val) {
     if (!val) return '';
@@ -4341,6 +4359,7 @@ function startEditSpCell(dayKey, pi) {
     td.appendChild(input);
     input.focus(); input.select();
     const save = () => {
+        input.removeEventListener('blur', save);
         const val = input.value.trim();
         if (!stundenplanData[stundenplanPerson]) stundenplanData[stundenplanPerson] = {};
         if (!stundenplanData[stundenplanPerson][dayKey]) stundenplanData[stundenplanPerson][dayKey] = [];
