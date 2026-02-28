@@ -4696,7 +4696,7 @@ function nasFormHtml() {
             <div class="nas-form-row">
                 <input class="nas-inp" id="nas-url" type="url" placeholder="http://192.168.x.x:5000" value="${h(cfg.url||'')}">
                 <input class="nas-inp" id="nas-user" type="text" placeholder="Benutzername" value="${h(cfg.user||'')}">
-                <input class="nas-inp" id="nas-pass" type="password" placeholder="Passwort">
+                <input class="nas-inp" id="nas-pass" type="password" placeholder="Passwort" value="${h(cfg.pass||'')}">
                 <button class="btn btn-primary btn-sm" onclick="nasConnect()">Verbinden</button>
             </div>
             <div id="nas-err" style="font-size:.78rem;color:var(--danger,#e55);margin-top:6px"></div>
