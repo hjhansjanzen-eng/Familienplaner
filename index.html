@@ -4668,6 +4668,9 @@ async function renderHalloWeather() {
             draw(d.current, d.daily, city);
         } catch { el.innerHTML = '<div class="hc-loading">Wetter nicht verfügbar</div>'; }
     };
+    // Gespeicherten Standort aus localStorage laden – einmalige Abfrage reicht.
+    const _savedLoc = (() => { try { return JSON.parse(localStorage.getItem('wp_location') || 'null'); } catch { return null; } })();
+    if (_savedLoc) { load(_savedLoc.lat, _savedLoc.lon, _savedLoc.city); return; }
     if (!navigator.geolocation) { load(51.1657, 10.4515, ''); return; }
     navigator.geolocation.getCurrentPosition(async pos => {
         const { latitude: lat, longitude: lon } = pos.coords;
@@ -4679,6 +4682,7 @@ async function renderHalloWeather() {
             const gd = await gr.json();
             city = gd.address?.city || gd.address?.town || gd.address?.village || '';
         } catch {}
+        localStorage.setItem('wp_location', JSON.stringify({ lat, lon, city }));
         load(lat, lon, city);
     }, () => load(51.1657, 10.4515, ''));
 }
