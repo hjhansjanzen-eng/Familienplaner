@@ -2002,6 +2002,8 @@
             background: var(--white); color: var(--text); font-size: .85rem; min-width: 0; }
         .nas-inp:focus { border-color: var(--s1, var(--green)); outline: none; }
     </style>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -3373,6 +3375,65 @@ const DEFAULT_MEALS = [
     ]},
 ];
 
+// ── SUPABASE ──
+const SUPABASE_URL = 'https://wbcbkrybjpmcfjoxuvch.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiY2JrcnlianBtY2Zqb3h1dmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMzEyNDEsImV4cCI6MjA5MDkwNzI0MX0.RO6nOneI6T1r26eOaJpjjW3d2pL6cAGhU2nA-UykL2g';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Welche localStorage-Keys in der Cloud synchronisiert werden
+const CLOUD_KEYS = new Set([
+    'wp_meals_v4','wp_weeks_v1','wp_shop_custom_v1','wp_shop_amounts_v1',
+    'wp_favorites_v1','wp_checked_v3','wp_recipes_v1','wp_stundenplan_v1',
+    'wp_sched_v2','wp_sched_week_v1','wp_sched_day_v1','wp_notizen_v1',
+    'wp_cd_v1','wp_gcal_url_v1','wp_spotify_links','wp_familyname_v1'
+]);
+
+// Alle Cloud-Daten laden und in localStorage cachen (beim Start)
+async function cloudLoad() {
+    try {
+        const { data, error } = await sb.from('einstellungen').select('schluessel,wert');
+        if (error) throw error;
+        (data || []).forEach(r => {
+            localStorage.setItem(r.schluessel, JSON.stringify(r.wert));
+        });
+        console.log('[Supabase] Daten geladen ✓');
+    } catch(e) {
+        console.warn('[Supabase] Offline – lokale Daten werden genutzt:', e.message);
+    }
+}
+
+// Einen Key asynchron in die Cloud schreiben (fire & forget)
+function cloudSave(key, value) {
+    if (!CLOUD_KEYS.has(key)) return;
+    sb.from('einstellungen')
+      .upsert({ schluessel: key, wert: value, geaendert: new Date().toISOString() })
+      .then(({ error }) => { if (error) console.warn('[Supabase] Speicherfehler:', error.message); });
+}
+
+// Echtzeit-Sync: Wenn ein anderes Gerät Daten ändert, neu laden
+function setupRealtime() {
+    sb.channel('wp-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'einstellungen' }, async (payload) => {
+          const key = payload.new?.schluessel;
+          if (!key) return;
+          // Lokalen Cache aktualisieren
+          if (payload.new?.wert !== undefined) localStorage.setItem(key, JSON.stringify(payload.new.wert));
+          // Betroffene UI-Bereiche neu rendern
+          if (['wp_meals_v4','wp_weeks_v1','wp_shop_custom_v1','wp_shop_amounts_v1','wp_favorites_v1','wp_checked_v3'].includes(key)) {
+              loadState(); renderMeals(); renderWeekGrid();
+          }
+          if (['wp_sched_v2','wp_sched_week_v1','wp_sched_day_v1'].includes(key)) {
+              loadSchedState(); renderSchedWeek();
+          }
+          if (key === 'wp_stundenplan_v1') loadStundenplan();
+          if (key === 'wp_notizen_v1')     { loadNotizen(); renderNotizen(); }
+          if (key === 'wp_cd_v1')          cdLoad();
+          if (key === 'wp_familyname_v1')  renderHalloPage();
+      })
+      .subscribe();
+    console.log('[Supabase] Echtzeit-Sync aktiv ✓');
+}
+
 // ── STATE ──
 const LS = { meals: 'wp_meals_v4', weeks: 'wp_weeks_v1', curWeek: 'wp_curweek_v1', checked: 'wp_checked_v3', recipes: 'wp_recipes_v1', shopCustom: 'wp_shop_custom_v1', shopAmounts: 'wp_shop_amounts_v1', favorites: 'wp_favorites_v1' };
 let meals = [], weekPlans = {}, currentWeek = '', checkedItems = {}, recipeCache = {}, activeCategory = 'Alle', customShopItems = [], amountOverrides = {}, favoriteMeals = new Set(), mealSearch = '';
@@ -3389,14 +3450,15 @@ function loadState() {
     favoriteMeals    = new Set(p(LS.favorites, []));
 }
 function save() {
-    localStorage.setItem(LS.meals,       JSON.stringify(meals));
-    localStorage.setItem(LS.weeks,       JSON.stringify(weekPlans));
-    localStorage.setItem(LS.shopCustom,  JSON.stringify(customShopItems));
-    localStorage.setItem(LS.shopAmounts, JSON.stringify(amountOverrides));
-    localStorage.setItem(LS.favorites,   JSON.stringify([...favoriteMeals]));
-    localStorage.setItem(LS.curWeek,     JSON.stringify(currentWeek));
-    localStorage.setItem(LS.recipes,     JSON.stringify(recipeCache));
-    localStorage.setItem(LS.checked,     JSON.stringify(checkedItems));
+    const put = (k, v) => { localStorage.setItem(k, v); cloudSave(k, JSON.parse(v)); };
+    put(LS.meals,       JSON.stringify(meals));
+    put(LS.weeks,       JSON.stringify(weekPlans));
+    put(LS.shopCustom,  JSON.stringify(customShopItems));
+    put(LS.shopAmounts, JSON.stringify(amountOverrides));
+    put(LS.favorites,   JSON.stringify([...favoriteMeals]));
+    put(LS.curWeek,     JSON.stringify(currentWeek));
+    put(LS.recipes,     JSON.stringify(recipeCache));
+    put(LS.checked,     JSON.stringify(checkedItems));
 }
 function emptyWeek() {
     const w = {};
@@ -4939,6 +5001,7 @@ function loadStundenplan() {
 }
 function saveStundenplan() {
     localStorage.setItem('wp_stundenplan_v1', JSON.stringify(stundenplanData));
+    cloudSave('wp_stundenplan_v1', stundenplanData);
 }
 
 function renderStundenplanTab() {
@@ -5098,9 +5161,10 @@ function loadSchedState() {
     schedDay  = p('wp_sched_day_v1', 'mon');
 }
 function saveSchedState() {
-    localStorage.setItem('wp_sched_v2',      JSON.stringify(scheduleData));
-    localStorage.setItem('wp_sched_week_v1', JSON.stringify(schedWeek));
-    localStorage.setItem('wp_sched_day_v1',  JSON.stringify(schedDay));
+    const put = (k, v) => { localStorage.setItem(k, v); cloudSave(k, JSON.parse(v)); };
+    put('wp_sched_v2',      JSON.stringify(scheduleData));
+    put('wp_sched_week_v1', JSON.stringify(schedWeek));
+    put('wp_sched_day_v1',  JSON.stringify(schedDay));
 }
 
 // ── HALLO PAGE ──
@@ -5264,7 +5328,7 @@ const LS_SP = 'wp_spotify_links';
 function getSpotifyLinks() {
     try { return JSON.parse(localStorage.getItem(LS_SP)) || []; } catch { return []; }
 }
-function saveSpotifyLinks(links) { localStorage.setItem(LS_SP, JSON.stringify(links)); }
+function saveSpotifyLinks(links) { localStorage.setItem(LS_SP, JSON.stringify(links)); cloudSave(LS_SP, links); }
 
 function renderSpotifyCard() {
     const links = getSpotifyLinks();
@@ -6056,7 +6120,7 @@ function getFamilyName() { return localStorage.getItem(LS_FAMILYNAME) || 'Famili
 function saveFamilyName() {
     const val = document.getElementById('settings-familyname').value.trim();
     if (!val) return;
-    localStorage.setItem(LS_FAMILYNAME, val);
+    localStorage.setItem(LS_FAMILYNAME, val); cloudSave(LS_FAMILYNAME, val);
     // Live-Update der Begrüßung
     const titleEl = document.getElementById('hallo-title-name');
     if (titleEl) titleEl.textContent = ' ' + val + '!';
@@ -6129,7 +6193,7 @@ async function gcalSync() {
             body: JSON.stringify({url}), signal: AbortSignal.timeout(5000)
         });
         if (!sr.ok) { const d = await sr.json(); throw new Error(d.error || 'Speichern fehlgeschlagen'); }
-        localStorage.setItem(LS_GCAL_URL, url);
+        localStorage.setItem(LS_GCAL_URL, url); cloudSave(LS_GCAL_URL, url);
 
         // Aktuelle Woche synchronisieren
         const { total, withPerson } = await gcalFetchWeek(schedWeek);
@@ -6362,6 +6426,7 @@ function cdLoad() {
 }
 function cdSave() {
     localStorage.setItem('wp_cd_v1', JSON.stringify(cdEntries));
+    cloudSave('wp_cd_v1', cdEntries);
 }
 
 function cdDaysUntil(entry) {
@@ -6499,6 +6564,7 @@ function loadNotizen() {
 }
 function saveNotizen() {
     localStorage.setItem('wp_notizen_v1', JSON.stringify(notizen));
+    cloudSave('wp_notizen_v1', notizen);
 }
 function renderNotizen() {
     const el = document.getElementById('notiz-list');
@@ -6543,20 +6609,26 @@ loadNotizen();
 
 // ── INIT ──
 applySeasonTheme();
-loadState();
-loadSchedState();
-loadStundenplan();
-renderMeals();
-renderWeekGrid();
-renderHalloPage();
-updateKeyIndicator();
-checkProxyStatus();
-setInterval(checkProxyStatus, 10000);
-document.getElementById('img-upload-input').addEventListener('change', handleImageUpload);
-window.addEventListener('resize', () => {
-    const schedVisible = document.getElementById('tab-sched').style.display !== 'none';
-    if (schedVisible) renderSchedWeek();
-});
+(async () => {
+    await cloudLoad();           // Zuerst Cloud-Daten in localStorage laden
+    loadState();
+    loadSchedState();
+    loadStundenplan();
+    loadNotizen();
+    cdLoad();
+    renderMeals();
+    renderWeekGrid();
+    renderHalloPage();
+    updateKeyIndicator();
+    checkProxyStatus();
+    setInterval(checkProxyStatus, 10000);
+    setupRealtime();             // Echtzeit-Sync starten
+    document.getElementById('img-upload-input').addEventListener('change', handleImageUpload);
+    window.addEventListener('resize', () => {
+        const schedVisible = document.getElementById('tab-sched').style.display !== 'none';
+        if (schedVisible) renderSchedWeek();
+    });
+})();
 </script>
 <div id="sched-tooltip" class="sched-tooltip"></div>
 <!-- Notiz-Widget -->
