@@ -2,3 +2,14 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Logs & temporäre Dateien
+proxy.log
+*.log
+
+# Claude-interne Dateien
+.claude/
+
+# Nicht benötigt auf GitHub
+lovable/
+node_modules/

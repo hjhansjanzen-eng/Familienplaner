@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wochenplaner – Online-Architektur</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(135deg, #F0F2FF 0%, #E8F5FF 35%, #F5E8FF 70%, #F0F2FF 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+    color: #1A1535;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 900;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #FF5C35, #FF3D7F, #9747FF, #4361EE);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #7B74A0;
+    font-size: .95rem;
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: -.3px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── VERGLEICH ── */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto 48px;
+  }
+  @media (max-width: 700px) { .compare { grid-template-columns: 1fr; } }
+
+  .compare-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px;
+    border: 1.5px solid rgba(150,120,255,0.18);
+    box-shadow: 0 6px 24px rgba(100,80,255,0.09);
+  }
+  .compare-card.now .section-title    { color: #FF5C35; }
+  .compare-card.target .section-title { color: #00A05A; }
+
+  .check-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: .83rem; color: #3D3660; margin-bottom: 10px;
+  }
+  .check-row .ico { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow-wrap {
+    max-width: 1100px;
+    margin: 0 auto 48px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 36px;
+    border: 1.5px solid rgba(150,120,255,0.18);
+    box-shadow: 0 6px 28px rgba(100,80,255,0.09);
+  }
+
+  .nodes-row {
+    display: grid;
+    gap: 12px;
+  }
+  .nodes-4 { grid-template-columns: repeat(4,1fr); }
+  .nodes-3 { grid-template-columns: repeat(3,1fr); }
+  .nodes-2 { grid-template-columns: repeat(2,1fr); }
+  @media (max-width: 640px) {
+    .nodes-4, .nodes-3 { grid-template-columns: 1fr 1fr; }
+    .nodes-2 { grid-template-columns: 1fr; }
+  }
+
+  .node {
+    border-radius: 16px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    min-height: 90px;
+  }
+  .node .icon  { font-size: 1.8rem; line-height: 1; }
+  .node .label { font-size: .82rem; font-weight: 800; line-height: 1.25; color: #fff; }
+  .node .sub   { font-size: .72rem; font-weight: 500; color: rgba(255,255,255,.85); }
+
+  .n-devices  { background: linear-gradient(135deg,#4361EE,#9747FF); }
+  .n-bat      { background: linear-gradient(135deg,#FF8C5E,#FF5C35); }
+  .n-github   { background: linear-gradient(135deg,#1A1535,#3D3660); }
+  .n-netlify  { background: linear-gradient(135deg,#00AEFF,#4361EE); }
+  .n-auth     { background: linear-gradient(135deg,#FF3D7F,#9747FF); }
+  .n-db       { background: linear-gradient(135deg,#00D47E,#00C9A7); }
+  .n-storage  { background: linear-gradient(135deg,#FFBE00,#FF8C5E); }
+  .n-gcal     { background: linear-gradient(135deg,#FF5C35,#FF3D7F); }
+  .n-groq     { background: linear-gradient(135deg,#9747FF,#4361EE); }
+  .n-proxy    { background: linear-gradient(135deg,#00C9A7,#00AEFF); }
+
+  /* arrows */
+  .arrow-down {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 38px;
+    position: relative;
+  }
+  .arrow-down::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, rgba(151,71,255,.3), rgba(67,97,238,.3));
+    transform: translateX(-50%);
+  }
+  .arrow-down span {
+    background: #fff;
+    padding: 2px 10px;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #9747FF;
+    border-radius: 100px;
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(151,71,255,.2);
+  }
+
+  /* legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    margin-top: 28px; padding-top: 20px;
+    border-top: 1px solid rgba(150,120,255,.12);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: .76rem; font-weight: 600; color: #7B74A0; }
+  .legend-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── TOOLS ── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto 48px;
+  }
+  .tool-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 24px;
+    border: 1.5px solid rgba(150,120,255,.15);
+    box-shadow: 0 4px 16px rgba(100,80,255,.07);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .tool-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(100,80,255,.14); }
+  .tool-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .tool-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+  }
+  .tool-name { font-size: 1rem; font-weight: 900; letter-spacing: -.2px; }
+  .tool-role { font-size: .75rem; font-weight: 600; color: #7B74A0; }
+  .tool-desc { font-size: .82rem; color: #7B74A0; line-height: 1.55; }
+  .tool-cost {
+    margin-top: 12px; font-size: .72rem; font-weight: 800;
+    padding: 4px 10px; border-radius: 100px; display: inline-block;
+  }
+  .cost-free { background: rgba(0,212,126,.12); color: #007a4a; }
+  .cost-same { background: rgba(67,97,238,.12);  color: #2233CC; }
+  .cost-opt  { background: rgba(255,190,0,.15);  color: #8a5a00; }
+
+  .ti-bat     { background: linear-gradient(135deg,rgba(255,140,94,.15),rgba(255,92,53,.15)); }
+  .ti-github  { background: rgba(26,21,53,.07); }
+  .ti-netlify { background: linear-gradient(135deg,rgba(0,174,255,.12),rgba(67,97,238,.12)); }
+  .ti-db      { background: linear-gradient(135deg,rgba(0,212,126,.12),rgba(0,201,167,.12)); }
+  .ti-storage { background: linear-gradient(135deg,rgba(255,190,0,.12),rgba(255,140,94,.12)); }
+  .ti-proxy   { background: linear-gradient(135deg,rgba(0,201,167,.12),rgba(0,174,255,.12)); }
+
+  .tn-bat     { color: #CC2A00; }
+  .tn-github  { color: #1A1535; }
+  .tn-netlify { color: #0070CC; }
+  .tn-db      { color: #007a4a; }
+  .tn-storage { color: #8a5a00; }
+  .tn-proxy   { color: #007a6a; }
+
+  /* ── TABELLEN ── */
+  .tables-wrap {
+    max-width: 1100px;
+    margin: 0 auto 48px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 36px;
+    border: 1.5px solid rgba(150,120,255,.18);
+    box-shadow: 0 6px 28px rgba(100,80,255,.09);
+  }
+  .tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    gap: 14px;
+    margin-top: 6px;
+  }
+  .tbl-card { border-radius: 14px; padding: 16px; border: 1.5px solid; }
+  .tbl-name {
+    font-size: .85rem; font-weight: 900;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 10px;
+  }
+  .tbl-field {
+    font-size: .75rem; color: #3D3660; padding: 4px 0;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+    font-family: 'Courier New', monospace;
+    display: flex; gap: 6px;
+  }
+  .tbl-field:last-child { border-bottom: none; }
+  .tbl-type { color: #7B74A0; font-size: .68rem; }
+
+  .t1 { background: rgba(0,174,255,.05);  border-color: rgba(0,174,255,.25);  } .t1 .tbl-name { color: #0088CC; }
+  .t2 { background: rgba(0,212,126,.05);  border-color: rgba(0,212,126,.25);  } .t2 .tbl-name { color: #007a4a; }
+  .t3 { background: rgba(255,190,0,.06);  border-color: rgba(255,190,0,.3);   } .t3 .tbl-name { color: #9A6A00; }
+  .t4 { background: rgba(151,71,255,.05); border-color: rgba(151,71,255,.22); } .t4 .tbl-name { color: #6010CC; }
+  .t5 { background: rgba(255,92,53,.05);  border-color: rgba(255,92,53,.22);  } .t5 .tbl-name { color: #CC2A00; }
+
+  /* ── STEPS ── */
+  .steps-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 24px;
+    padding: 36px;
+    border: 1.5px solid rgba(150,120,255,.18);
+    box-shadow: 0 6px 28px rgba(100,80,255,.09);
+  }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    gap: 12px;
+    margin-top: 6px;
+  }
+  .step { border-radius: 14px; padding: 18px 16px; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; font-weight: 900; color: #fff;
+    margin-bottom: 10px;
+  }
+  .step-title { font-size: .88rem; font-weight: 800; margin-bottom: 5px; color: #1A1535; }
+  .step-desc  { font-size: .77rem; color: #7B74A0; line-height: 1.5; }
+
+  .s1 { background: rgba(107,92,231,.07); } .s1 .step-num { background: #6b5ce7; }
+  .s2 { background: rgba(255,140,94,.07); } .s2 .step-num { background: #FF8C5E; }
+  .s3 { background: rgba(0,174,255,.07);  } .s3 .step-num { background: #00AEFF; }
+  .s4 { background: rgba(0,212,126,.07);  } .s4 .step-num { background: #00D47E; }
+  .s5 { background: rgba(67,97,238,.07);  } .s5 .step-num { background: #4361EE; }
+  .s6 { background: rgba(0,201,167,.07);  } .s6 .step-num { background: #00C9A7; }
+  .s7 { background: rgba(255,92,53,.07);  } .s7 .step-num { background: #FF5C35; }
+
+  .divider {
+    max-width: 1100px; margin: 0 auto 40px;
+    border: none; border-top: 1.5px solid rgba(150,120,255,.12);
+  }
+
+  .cost-box {
+    margin-top: 24px; padding: 18px 20px;
+    background: rgba(0,212,126,.07);
+    border-radius: 14px; border: 1.5px solid rgba(0,212,126,.2);
+  }
+  .cost-box strong { font-size: .85rem; color: #007a4a; display: block; margin-bottom: 5px; }
+  .cost-box p { font-size: .82rem; color: #3D3660; line-height: 1.65; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .72rem; font-weight: 800; padding: 3px 10px;
+    border-radius: 100px;
+  }
+  .chip-same { background: rgba(0,212,126,.13); color: #007a4a; }
+  .chip-new  { background: rgba(151,71,255,.11); color: #6010CC; }
+</style>
+</head>
+<body>
+
+<h1>🌐 Wochenplaner – Online-Architektur</h1>
+<p class="subtitle">Von lokal auf einem Gerät → synchronisiert auf allen Geräten · Gleicher Workflow wie Panzer Kommando</p>
+
+<!-- ── VERGLEICH ── -->
+<div class="compare">
+  <div class="compare-card now">
+    <div class="section-title">📱 Aktuell (lokal)</div>
+    <div class="check-row"><span class="ico" style="color:#FF5C35">✗</span><span>Nur <strong>1 Gerät</strong> – kein Handy, kein Tablet</span></div>
+    <div class="check-row"><span class="ico" style="color:#FF5C35">✗</span><span>Daten im <strong>localStorage</strong> – verloren bei Browser-Reset</span></div>
+    <div class="check-row"><span class="ico" style="color:#FF5C35">✗</span><span>Kein Zugriff unterwegs oder aus dem Urlaub</span></div>
+    <div class="check-row"><span class="ico" style="color:#FF5C35">✗</span><span>Kein gleichzeitiges Bearbeiten</span></div>
+  </div>
+  <div class="compare-card target">
+    <div class="section-title">🌐 Ziel (online + sync)</div>
+    <div class="check-row"><span class="ico" style="color:#00D47E">✓</span><span><strong>Alle Geräte:</strong> Handy, Tablet, PC – überall dieselben Daten</span></div>
+    <div class="check-row"><span class="ico" style="color:#00D47E">✓</span><span>Daten sicher in <strong>Supabase PostgreSQL</strong> (EU Frankfurt)</span></div>
+    <div class="check-row"><span class="ico" style="color:#00D47E">✓</span><span><strong>Echtzeit-Sync</strong> – Änderungen sofort auf allen Geräten</span></div>
+    <div class="check-row"><span class="ico" style="color:#00D47E">✓</span><span>Gleiche Accounts wie Panzer – <strong>kein neues Setup</strong> nötig</span></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── FLOW ── -->
+<div class="flow-wrap">
+  <div class="section-title" style="color:#9747FF; margin-bottom:32px">🔄 Architektur-Ablaufdiagramm</div>
+
+  <!-- Geräte -->
+  <div class="nodes-row nodes-4">
+    <div class="node n-devices"><div class="icon">📱</div><div class="label">Handy (iOS/Android)</div><div class="sub">Browser oder PWA</div></div>
+    <div class="node n-devices"><div class="icon">💻</div><div class="label">Laptop / PC</div><div class="sub">Chrome, Firefox…</div></div>
+    <div class="node n-devices"><div class="icon">📟</div><div class="label">Tablet</div><div class="sub">Browser oder PWA</div></div>
+    <div class="node n-devices"><div class="icon">📺</div><div class="label">Smart TV / andere</div><div class="sub">Beliebiger Browser</div></div>
+  </div>
+
+  <div class="arrow-down"><span>HTTPS-Anfrage</span></div>
+
+  <!-- Hosting -->
+  <div class="nodes-row nodes-2">
+    <div class="node n-netlify" style="min-height:80px">
+      <div class="icon">🚀</div>
+      <div class="label">Netlify</div>
+      <div class="sub">Hosting der index.html · gleicher Account wie Panzer<br>z.B. janzen-planner.netlify.app</div>
+    </div>
+    <div class="node n-github" style="min-height:80px">
+      <div class="icon">🐙</div>
+      <div class="label">GitHub (hjhan)</div>
+      <div class="sub">Repo: wochenplaner · gleicher Account<br>Auto-Deploy via .bat Skript</div>
+    </div>
+  </div>
+
+  <div class="arrow-down"><span>Daten lesen / schreiben</span></div>
+
+  <!-- Supabase -->
+  <div class="nodes-row" style="grid-template-columns:1fr">
+    <div class="node n-db" style="min-height:80px">
+      <div class="icon">🗄️</div>
+      <div class="label">Supabase (bestehender Account)</div>
+      <div class="sub">Neues Projekt „wochenplaner" · EU Frankfurt · PostgreSQL · Echtzeit-Sync auf alle Geräte</div>
+    </div>
+  </div>
+
+  <div class="arrow-down"><span>Externe Dienste (unverändert)</span></div>
+
+  <!-- Externe -->
+  <div class="nodes-row nodes-3">
+    <div class="node n-gcal"><div class="icon">📅</div><div class="label">Google Kalender</div><div class="sub">iCal-Sync bleibt wie bisher</div></div>
+    <div class="node n-groq"><div class="icon">🤖</div><div class="label">Groq / KI API</div><div class="sub">Zutatenerkennung bleibt wie bisher</div></div>
+    <div class="node n-proxy"><div class="icon">🖥️</div><div class="label">Schulmanager-Proxy</div><div class="sub">Bleibt lokal (optional: Cloud-Server)</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#4361EE,#9747FF)"></div>Nutzer-Geräte</div>
+    <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#00AEFF,#4361EE)"></div>Hosting (gleicher Netlify-Account)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#00D47E,#00C9A7)"></div>Supabase Datenbank (gleicher Account, neues Projekt)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#FF5C35,#FF3D7F)"></div>Bestehende externe Dienste (unverändert)</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── TOOLS ── -->
+<p class="section-title" style="max-width:1100px;margin:0 auto 20px;font-size:1.25rem;color:#1A1535">🛠️ Benötigte Tools &amp; Dienste</p>
+
+<div class="tools-grid">
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon ti-bat">⚙️</div>
+      <div>
+        <div class="tool-name tn-bat">Deploy-Skript (.bat)</div>
+        <div class="tool-role">Wie beim Panzerspiel</div>
+      </div>
+    </div>
+    <p class="tool-desc">Gleiches .bat-Skript wie bei Panzer Kommando – Doppelklick führt <em>git add · commit · push</em> aus. Netlify deployed automatisch.</p>
+    <span class="tool-cost cost-same">✓ Gleicher Workflow</span>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon ti-github">🐙</div>
+      <div>
+        <div class="tool-name tn-github">GitHub (hjhan)</div>
+        <div class="tool-role">Versionskontrolle</div>
+      </div>
+    </div>
+    <p class="tool-desc">Gleicher GitHub-Account. Nur ein neues privates Repository <em>wochenplaner</em> anlegen. Verbindung zu Netlify wie beim Panzerspiel.</p>
+    <span class="tool-cost cost-same">✓ Gleicher Account</span>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon ti-netlify">🚀</div>
+      <div>
+        <div class="tool-name tn-netlify">Netlify</div>
+        <div class="tool-role">Hosting &amp; eigene Domain</div>
+      </div>
+    </div>
+    <p class="tool-desc">Gleicher Netlify-Account. Neues Projekt anlegen, GitHub-Repo auswählen → App sofort live. HTTPS automatisch inklusive.</p>
+    <span class="tool-cost cost-same">✓ Gleicher Account</span>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon ti-db">🗄️</div>
+      <div>
+        <div class="tool-name tn-db">Supabase Datenbank</div>
+        <div class="tool-role">Echtzeit-Daten &amp; Sync</div>
+      </div>
+    </div>
+    <p class="tool-desc">Gleicher Supabase-Account wie Panzer. Neues Projekt <em>wochenplaner</em> anlegen (EU Frankfurt). Ersetzt localStorage komplett. Echtzeit-Sync auf alle Geräte.</p>
+    <span class="tool-cost cost-same">✓ Gleicher Account</span>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon ti-storage">🖼️</div>
+      <div>
+        <div class="tool-name tn-storage">Supabase Storage</div>
+        <div class="tool-role">Mahlzeit-Fotos</div>
+      </div>
+    </div>
+    <p class="tool-desc">Im gleichen Supabase-Projekt: Bilder für Mahlzeiten werden einmal hochgeladen und stehen auf allen Geräten zur Verfügung. 1 GB kostenlos.</p>
+    <span class="tool-cost cost-free">✓ Kostenlos (1 GB)</span>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-header">
+      <div class="tool-icon ti-proxy">🖥️</div>
+      <div>
+        <div class="tool-name tn-proxy">Schulmanager-Proxy</div>
+        <div class="tool-role">Optional: Cloud-Server</div>
+      </div>
+    </div>
+    <p class="tool-desc">Aktuell lokal. Für vollständig online: auf kleinem VPS (z.B. Hetzner ~4€/Monat). Für Home-Nutzung kann der PC weiter als Proxy laufen.</p>
+    <span class="tool-cost cost-opt">Optional (~4€/Monat)</span>
+  </div>
+
+</div>
+
+<hr class="divider">
+
+<!-- ── SUPABASE TABELLEN ── -->
+<div class="tables-wrap">
+  <div class="section-title" style="color:#00A05A">🗄️ Supabase Datenbank-Tabellen</div>
+  <p style="font-size:.83rem;color:#7B74A0;margin-bottom:20px">
+    Diese 5 Tabellen ersetzen das bisherige
+    <code style="background:rgba(151,71,255,.08);padding:2px 6px;border-radius:4px;font-size:.8rem">localStorage</code>
+    vollständig — Projekt: <strong>wochenplaner</strong> · Region: <strong>EU Frankfurt</strong>
+    &nbsp;<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:100px;background:rgba(0,212,126,.13);color:#007a4a">✓ Gleicher Supabase-Account</span>
+  </p>
+
+  <div class="tables-grid">
+    <div class="tbl-card t1">
+      <div class="tbl-name">📋 mahlzeiten</div>
+      <div class="tbl-field">id <span class="tbl-type">uuid PK</span></div>
+      <div class="tbl-field">name <span class="tbl-type">text</span></div>
+      <div class="tbl-field">kategorie <span class="tbl-type">text</span></div>
+      <div class="tbl-field">zutaten <span class="tbl-type">jsonb</span></div>
+      <div class="tbl-field">rezept <span class="tbl-type">text</span></div>
+      <div class="tbl-field">bild_url <span class="tbl-type">text</span></div>
+    </div>
+    <div class="tbl-card t2">
+      <div class="tbl-name">📅 wochenplan</div>
+      <div class="tbl-field">id <span class="tbl-type">uuid PK</span></div>
+      <div class="tbl-field">woche <span class="tbl-type">text</span></div>
+      <div class="tbl-field">tag <span class="tbl-type">int (0–6)</span></div>
+      <div class="tbl-field">slot <span class="tbl-type">text</span></div>
+      <div class="tbl-field">mahlzeit_id <span class="tbl-type">uuid FK</span></div>
+      <div class="tbl-field">aktualisiert <span class="tbl-type">timestamptz</span></div>
+    </div>
+    <div class="tbl-card t3">
+      <div class="tbl-name">🛒 einkaufsliste</div>
+      <div class="tbl-field">id <span class="tbl-type">uuid PK</span></div>
+      <div class="tbl-field">woche <span class="tbl-type">text</span></div>
+      <div class="tbl-field">name <span class="tbl-type">text</span></div>
+      <div class="tbl-field">menge <span class="tbl-type">text</span></div>
+      <div class="tbl-field">einheit <span class="tbl-type">text</span></div>
+      <div class="tbl-field">erledigt <span class="tbl-type">boolean</span></div>
+    </div>
+    <div class="tbl-card t4">
+      <div class="tbl-name">⭐ favoriten</div>
+      <div class="tbl-field">id <span class="tbl-type">uuid PK</span></div>
+      <div class="tbl-field">mahlzeit_id <span class="tbl-type">uuid FK</span></div>
+      <div class="tbl-field">hinzugefuegt <span class="tbl-type">timestamptz</span></div>
+    </div>
+    <div class="tbl-card t5">
+      <div class="tbl-name">⚙️ einstellungen</div>
+      <div class="tbl-field">schluessel <span class="tbl-type">text PK</span></div>
+      <div class="tbl-field">wert <span class="tbl-type">jsonb</span></div>
+      <div class="tbl-field">geaendert <span class="tbl-type">timestamptz</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── SCHRITTE ── -->
+<div class="steps-wrap">
+  <div class="section-title" style="color:#9747FF">🚀 Umsetzung in 7 Schritten</div>
+  <div class="steps-grid">
+    <div class="step s1">
+      <div class="step-num">1</div>
+      <div class="step-title">GitHub Repo anlegen</div>
+      <div class="step-desc">Neues privates Repo <em>wochenplaner</em> im bestehenden GitHub-Account (hjhan). index.html hochladen.</div>
+    </div>
+    <div class="step s2">
+      <div class="step-num">2</div>
+      <div class="step-title">.bat Skript kopieren</div>
+      <div class="step-desc">Deploy-Skript vom Panzerspiel kopieren, Pfad anpassen. Doppelklick = deployed.</div>
+    </div>
+    <div class="step s3">
+      <div class="step-num">3</div>
+      <div class="step-title">Netlify verbinden</div>
+      <div class="step-desc">Im bestehenden Netlify-Account neues Projekt, GitHub-Repo wählen → sofort live.</div>
+    </div>
+    <div class="step s4">
+      <div class="step-num">4</div>
+      <div class="step-title">Supabase Projekt</div>
+      <div class="step-desc">Im bestehenden Account neues Projekt <em>wochenplaner</em> (EU Frankfurt) + 5 Tabellen anlegen.</div>
+    </div>
+    <div class="step s5">
+      <div class="step-num">5</div>
+      <div class="step-title">SDK einbinden</div>
+      <div class="step-desc">Supabase JS-SDK per CDN in index.html + URL und Anon-Key aus dem Supabase-Dashboard.</div>
+    </div>
+    <div class="step s6">
+      <div class="step-num">6</div>
+      <div class="step-title">localStorage ersetzen</div>
+      <div class="step-desc">~15 Stellen im Code von localStorage auf Supabase umstellen. Echtzeit-Subscriptions aktivieren.</div>
+    </div>
+    <div class="step s7">
+      <div class="step-num">7</div>
+      <div class="step-title">Als App installieren</div>
+      <div class="step-desc">PWA-Manifest → auf Handys als App speicherbar. Icon + Offline-Modus inklusive.</div>
+    </div>
+  </div>
+
+  <div class="cost-box">
+    <strong>💰 Kosten: 100 % kostenlos</strong>
+    <p>GitHub Free + bestehender Netlify-Account + Supabase Free-Tier (500 MB DB · 1 GB Storage · 50.000 Zeilen) reichen für eine Familie problemlos aus. Keine neuen Accounts, keine neuen Kosten.</p>
+  </div>
+</div>
+
+</body>
+</html>

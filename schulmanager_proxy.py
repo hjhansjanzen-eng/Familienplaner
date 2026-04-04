@@ -204,75 +204,228 @@ def week_key_to_dates(week_key: str):
 _DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
-def fetch_stundenplan(week_key: str, student_id: int = None) -> dict:
-    """Holt den Stundenplan und konvertiert ihn in das Wochenplaner-Format."""
-    # Schüler bestimmen: per ID aus _all_students, sonst aktueller _student
+def _sm_post(payload: dict) -> dict:
+    """Hilfsfunktion: Schulmanager-API POST, gibt geparste JSON-Antwort zurück."""
+    resp = requests.post(API_URL, json=payload, headers={
+        "Authorization": f"Bearer {_token}",
+        "Content-Type":  "application/json"
+    }, timeout=10)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def fetch_raw_stundenplan(week_key: str, student_id: int = None) -> dict:
+    """Liefert die rohe Schulmanager-Antwort (für Debugging)."""
     student = _student
     if student_id and _all_students:
         match = next((s for s in _all_students if s.get("id") == student_id), None)
         if match:
             student = match
     start, end = week_key_to_dates(week_key)
-    payload = {
-        "bundleVersion": "138baca5f4c6fb8d92ce",
-        "requests": [{
-            "moduleName":   "schedules",
-            "endpointName": "get-actual-lessons",
-            "parameters": {
-                "student": student,
-                "start":   start,
-                "end":     end
-            }
-        }]
-    }
-    logging.debug(f"Stundenplan-Request: student={student}, start={start}, end={end}")
-    resp = requests.post(API_URL, json=payload, headers={
-        "Authorization": f"Bearer {_token}",
-        "Content-Type":  "application/json"
-    }, timeout=10)
-    logging.debug(f"Stundenplan HTTP {resp.status_code}: {resp.text[:1000]}")
-    resp.raise_for_status()
-    return _transform(resp.json())
-
-
-def _transform(sm_data: dict) -> dict:
-    """Konvertiert die Schulmanager-Antwort in {dayKey: {periodNum: text}}."""
     result = {}
+    for endpoint in ("get-actual-lessons", "get-lessons"):
+        payload = {
+            "bundleVersion": "138baca5f4c6fb8d92ce",
+            "requests": [{
+                "moduleName":   "schedules",
+                "endpointName": endpoint,
+                "parameters": {"student": student, "start": start, "end": end}
+            }]
+        }
+        try:
+            data = _sm_post(payload)
+            result[endpoint] = data
+        except Exception as e:
+            result[endpoint] = {"error": str(e)}
+    return result
+
+
+def fetch_stundenplan(week_key: str, student_id: int = None) -> dict:
+    """Holt den Stundenplan und konvertiert ihn in das Wochenplaner-Format.
+
+    Strategie:
+      1. get-lessons  → Basis-Stundenplan (was planmäßig stattfinden soll)
+      2. get-actual-lessons → tatsächliche Änderungen (Vertretung, Ausfall …)
+    Lektionen aus (2) überschreiben (1). Lektionen, die nur in (1) vorhanden
+    sind und in (2) fehlen, werden als ausgefallen markiert.
+    """
+    student = _student
+    if student_id and _all_students:
+        match = next((s for s in _all_students if s.get("id") == student_id), None)
+        if match:
+            student = match
+    start, end = week_key_to_dates(week_key)
+
+    def make_payload(endpoint):
+        return {
+            "bundleVersion": "138baca5f4c6fb8d92ce",
+            "requests": [{
+                "moduleName":   "schedules",
+                "endpointName": endpoint,
+                "parameters": {"student": student, "start": start, "end": end}
+            }]
+        }
+
+    # Basis-Stundenplan holen (planmäßige Lektionen)
+    planned = {}
+    try:
+        raw_planned = _sm_post(make_payload("get-lessons"))
+        planned = _extract_planned(raw_planned)
+        logging.info(f"get-lessons: {sum(len(v) for v in planned.values())} Lektionen geladen")
+    except Exception as e:
+        logging.warning(f"get-lessons fehlgeschlagen: {e}")
+
+    # Tatsächliche Lektionen holen (Änderungen/Ausfälle)
+    raw_actual = _sm_post(make_payload("get-actual-lessons"))
+    logging.info(f"get-actual-lessons raw (first 500): {json.dumps(raw_actual)[:500]}")
+    return _transform(raw_actual, planned)
+
+
+def _lesson_text(lesson_obj: dict) -> str:
+    """Baut einen Anzeigetext aus einem Lektion-Objekt (subject/teachers/room)."""
+    subj    = lesson_obj.get("subject", {}).get("abbreviation", "") if lesson_obj else ""
+    teachers = lesson_obj.get("teachers") or []
+    teacher  = teachers[0].get("abbreviation", "") if teachers else ""
+    room     = (lesson_obj.get("room") or {}).get("name", "")
+    text = subj
+    if teacher: text += f" {teacher}"
+    if room:    text += f" {room}"
+    return text
+
+
+def _extract_planned(sm_data: dict) -> dict:
+    """Liest den Basis-Stundenplan aus der get-lessons-Antwort.
+
+    Gibt {day_key: {period_num: text}} zurück.
+    Probiert verschiedene Strukturen, da die API-Antwort variiert.
+    """
+    result = {}
+    try:
+        lessons = sm_data["results"][0]["data"]
+    except (KeyError, IndexError, TypeError):
+        logging.warning(f"get-lessons: unerwartetes Format – {str(sm_data)[:300]}")
+        return result
+
+    logging.info(f"get-lessons: {len(lessons)} Einträge, erstes: {json.dumps(lessons[0] if lessons else {})[:400]}")
+
+    for lesson in lessons:
+        try:
+            date_str = lesson.get("date") or (lesson.get("lesson") or {}).get("date", "")
+            if not date_str:
+                continue
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            weekday  = date_obj.weekday()
+            if weekday > 4:
+                continue
+            day_key    = _DAY_KEYS[weekday]
+            class_hour = lesson.get("classHour") or (lesson.get("lesson") or {}).get("classHour") or {}
+            period_num = class_hour.get("number")
+            if period_num is None:
+                continue
+            period_num = str(period_num)  # immer String für konsistente Keys
+
+            # Lektion-Details: direkt, oder unter "lesson"
+            lobj = lesson.get("lesson") or lesson
+            text = _lesson_text(lobj)
+            if not text:
+                continue
+
+            result.setdefault(day_key, {})[period_num] = text
+        except (KeyError, TypeError, ValueError):
+            continue
+
+    return result
+
+
+def _transform(sm_data: dict, planned: dict | None = None) -> dict:
+    """Konvertiert die get-actual-lessons-Antwort in {dayKey: {periodNum: entry}}.
+
+    planned  – Basis-Stundenplan aus get-lessons ({day: {period: text}}).
+               Wenn vorhanden, werden Lektionen ohne actual-Eintrag als
+               ausgefallen markiert.
+
+    entry ist ein Dict mit:
+      t  – Anzeigetext (Fach [Lehrer] [Raum])
+      x  – True wenn Stunde ausgefallen
+      v  – True wenn Vertretung (Fach oder Lehrer geändert)
+      o  – Original-Info (Fach/Lehrer) bei Vertretung
+    """
+    if planned is None:
+        planned = {}
+
+    # Basis: alle geplanten Stunden als ausgefallen vormerken
+    result: dict = {}
+    for day_key, periods in planned.items():
+        result[day_key] = {}
+        for period_num, text in periods.items():
+            result[day_key][period_num] = {"t": text, "x": True}
+
+    # Tatsächliche Lektionen eintragen / Ausfall-Flag entfernen
     try:
         lessons = sm_data["results"][0]["data"]
     except (KeyError, IndexError, TypeError):
         return result
 
+    logging.info(f"get-actual-lessons: {len(lessons)} Einträge")
+    if lessons:
+        # Ersten Eintrag als Struktur-Referenz loggen
+        logging.info(f"Erster Eintrag Typ={lessons[0].get('type')} keys={list(lessons[0].keys())}")
+        # Suche nach nicht-regulären Stunden zum Debuggen
+        special = [l for l in lessons if l.get("type") != "regularLesson"]
+        if special:
+            logging.info(f"Nicht-reguläre Stunden ({len(special)}): {json.dumps(special[0])[:600]}")
+        else:
+            logging.info("Keine nicht-regulären Stunden in dieser Woche gefunden")
+
     for lesson in lessons:
         try:
             date_obj   = datetime.strptime(lesson["date"], "%Y-%m-%d")
-            weekday    = date_obj.weekday()          # 0 = Mo, 4 = Fr
+            weekday    = date_obj.weekday()
             if weekday > 4:
-                continue                             # Wochenende überspringen
-            day_key    = _DAY_KEYS[weekday]
-            period_num = lesson["classHour"]["number"]
-            actual     = lesson.get("actualLesson")
-            if not actual:
                 continue
+            day_key    = _DAY_KEYS[weekday]
+            period_num = str(lesson["classHour"]["number"])  # immer String
+            lesson_type = lesson.get("type", "")
+            actual     = lesson.get("actualLesson")
+            # API liefert originalLessons als Array (nicht originalLesson singular)
+            orig_list  = lesson.get("originalLessons") or []
+            orig       = orig_list[0] if orig_list else lesson.get("originalLesson")
 
-            subj     = actual.get("subject", {}).get("abbreviation", "?")
-            teachers = actual.get("teachers") or []
-            teacher  = teachers[0].get("abbreviation", "") if teachers else ""
-            room     = actual.get("room", {}).get("name", "")
-            text     = subj + (f" {teacher}" if teacher else "") + (f" {room}" if room else "")
+            # Geplante Stunde: aus originalLessons oder planned-Dict
+            planned_text = (planned.get(day_key) or {}).get(period_num, "")
+            if not planned_text and orig:
+                planned_text = _lesson_text(orig)
 
-            # Vertretung markieren
-            orig = lesson.get("originalLesson")
-            if orig:
-                orig_subj = orig.get("subject", {}).get("id")
-                new_subj  = actual.get("subject", {}).get("id")
-                if orig_subj and orig_subj != new_subj:
-                    text = f"↔ {text}"
+            is_cancelled = lesson.get("isCancelled") or lesson_type == "cancelledLesson"
 
-            if day_key not in result:
-                result[day_key] = {}
-            result[day_key][period_num] = text
-        except (KeyError, TypeError, ValueError):
+            if is_cancelled or not actual:
+                if not planned_text:
+                    continue  # Keine Info → leerlassen
+                result.setdefault(day_key, {})[period_num] = {"t": planned_text, "x": True}
+            else:
+                text  = _lesson_text(actual)
+                entry = {"t": text}
+
+                # Vertretung: changedLesson-Typ oder Fach/Lehrer geändert?
+                orig_for_cmp    = orig or {}
+                orig_subj_id    = orig_for_cmp.get("subject", {}).get("id")
+                new_subj_id     = actual.get("subject", {}).get("id")
+                orig_teachers   = orig_for_cmp.get("teachers") or []
+                orig_teacher_ab = orig_teachers[0].get("abbreviation", "") if orig_teachers else ""
+                cur_teachers    = actual.get("teachers") or []
+                cur_teacher_ab  = cur_teachers[0].get("abbreviation", "") if cur_teachers else ""
+
+                subj_changed    = bool(orig_subj_id and orig_subj_id != new_subj_id)
+                teacher_changed = bool(orig_teacher_ab and orig_teacher_ab != cur_teacher_ab)
+                is_changed      = lesson_type == "changedLesson" or subj_changed or teacher_changed
+
+                if is_changed and planned_text:
+                    entry["v"] = True
+                    entry["o"] = planned_text
+
+                result.setdefault(day_key, {})[period_num] = entry
+        except (KeyError, TypeError, ValueError) as e:
+            logging.debug(f"Lektion übersprungen: {e} – {lesson.get('type')} {lesson.get('date')}")
             continue
 
     return result
@@ -316,6 +469,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._send(200, {
                 "loggedIn": token_valid,
                 "student":  _student,
+                "students": _all_students,
                 "user": {
                     "firstname": _user.get("firstname"),
                     "lastname":  _user.get("lastname"),
@@ -340,6 +494,21 @@ class ProxyHandler(BaseHTTPRequestHandler):
             except (requests.exceptions.ConnectionError,
                     requests.exceptions.Timeout):
                 self._send(503, {"error": "Schulmanager nicht erreichbar – Internetverbindung prüfen."})
+            except Exception as e:
+                self._send(500, {"error": str(e)})
+
+        elif parsed.path == "/raw-stundenplan":
+            # Debug-Endpoint: liefert die rohe Schulmanager-Antwort beider Endpoints
+            if not _token:
+                self._send(401, {"error": "Nicht angemeldet"}); return
+            week = (params.get("week") or [None])[0]
+            if not week:
+                self._send(400, {"error": "Parameter 'week' fehlt"}); return
+            raw_sid = (params.get("studentId") or [None])[0]
+            student_id = int(raw_sid) if raw_sid and raw_sid.isdigit() else None
+            try:
+                raw = fetch_raw_stundenplan(week, student_id)
+                self._send(200, raw)
             except Exception as e:
                 self._send(500, {"error": str(e)})
 
