@@ -3395,17 +3395,29 @@ const CLOUD_KEYS = new Set([
     'wp_meals_v4','wp_weeks_v1','wp_shop_custom_v1','wp_shop_amounts_v1',
     'wp_favorites_v1','wp_checked_v3','wp_recipes_v1','wp_stundenplan_v1',
     'wp_sched_v2','wp_sched_week_v1','wp_sched_day_v1','wp_notizen_v1',
-    'wp_cd_v1','wp_gcal_url_v1','wp_spotify_links','wp_familyname_v1'
+    'wp_cd_v1','wp_gcal_url_v1','wp_spotify_links','wp_familyname_v1',
+    // Einmalig-Transfer: nach dem Laden sofort aus Supabase löschen
+    'wp_tg_token','wp_tg_chatid','wp_sm_creds'
 ]);
+
+// Sensible Keys: werden nach dem Laden sofort aus Supabase gelöscht
+const TRANSIENT_KEYS = new Set(['wp_tg_token','wp_tg_chatid','wp_sm_creds']);
 
 // Alle Cloud-Daten laden und in localStorage cachen (beim Start)
 async function cloudLoad() {
     try {
         const { data, error } = await sb.from('einstellungen').select('schluessel,wert');
         if (error) throw error;
+        const transientFound = [];
         (data || []).forEach(r => {
             localStorage.setItem(r.schluessel, JSON.stringify(r.wert));
+            if (TRANSIENT_KEYS.has(r.schluessel)) transientFound.push(r.schluessel);
         });
+        // Sensible Daten sofort aus Supabase löschen (nur kurzzeitig in der Cloud)
+        if (transientFound.length > 0) {
+            await sb.from('einstellungen').delete().in('schluessel', transientFound);
+            console.log('[Supabase] Sensible Daten nach Transfer gelöscht ✓', transientFound);
+        }
         console.log('[Supabase] Daten geladen ✓');
     } catch(e) {
         console.warn('[Supabase] Offline – lokale Daten werden genutzt:', e.message);
@@ -4617,6 +4629,8 @@ function saveTgConfig() {
     if (!chatId) { alert('Bitte die Chat-ID eingeben oder automatisch ermitteln.'); return; }
     localStorage.setItem(LS_TG_TOKEN,  token);
     localStorage.setItem(LS_TG_CHATID, chatId);
+    cloudSave(LS_TG_TOKEN,  token);
+    cloudSave(LS_TG_CHATID, chatId);
     closeTgPanel();
 }
 function deleteTgConfig() {
@@ -6362,12 +6376,14 @@ async function smLogin(institutionId = null, studentId = null) {
             return;
         }
         // Zugangsdaten für nächstes Mal speichern
-        localStorage.setItem('wp_sm_creds', JSON.stringify({
+        const smCreds = {
             username: document.getElementById('sm-username').value.trim(),
             password: document.getElementById('sm-password').value,
             institutionId: institutionId,
             studentId: studentId
-        }));
+        };
+        localStorage.setItem('wp_sm_creds', JSON.stringify(smCreds));
+        cloudSave('wp_sm_creds', smCreds);
         smSetConnected(d.user, d.student, d.students);
     } catch (e) {
         errEl.textContent = e.name === 'TimeoutError'
